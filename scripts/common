@@ -1,0 +1,127 @@
+#!/bin/bash
+
+FindLibrary()
+{
+    LIBRARY_PATH=$1
+    if [ -d ${LIBRARY_PATH} ] && [ "$(ls -A ${LIBRARY_PATH})" ]; then
+        return 1
+    fi
+    return 0
+}
+
+CheckPackages()
+{
+    for package in ${@}; do
+        echo "Check package ${package}"
+        dpkg -s ${package} | grep '^Status: install ok installed' 1> /dev/null
+        if [ $? -ne 0 ]; then
+            echo "Package ${package} needs to be installed."
+            return 1
+        fi
+    done
+
+    return 0
+}
+
+InstallPackages()
+{
+    if [ $# -eq 0 ]; then
+        #echo "No arguments, nothing to do."
+        return 0
+    fi
+
+    CheckPackages ${@}
+
+    if [ $? -eq 0 ]; then
+        echo "All packages are installed."
+        return 0
+    fi
+
+    # Check if running as root
+    if [ ${EUID} -eq 0 ]; then
+        # Running as root, sudo is not available.
+        SUDO=""
+    else
+        # Running as a user, sudo is required.
+        SUDO="sudo"
+    fi
+
+    UPDATE_COMMAND="${SUDO} apt update"
+    INSTALL_COMMAND="${SUDO} apt install -y --no-install-recommends ${@}"
+
+    echo "${UPDATE_COMMAND}"
+    ${UPDATE_COMMAND}
+
+    echo "${INSTALL_COMMAND}"
+    ${INSTALL_COMMAND}
+
+    # Check if install failed
+    if [ $? -ne 0 ]; then 
+        exit 1
+    fi
+
+    return 0
+}
+
+GitClone()
+{
+    if [ $# -lt 2 ]; then
+        echo "A source directory and a URL are required to clone a git repository."
+        exit 1
+    fi
+
+    SOURCE_PATH=$1
+    URL=$2
+    BRANCH=$3
+
+    # Check the source directory exists and is not empty
+    if [ -d ${SOURCE_PATH} ] && [ "$(ls -A ${SOURCE_PATH})" ]; then
+         return 0
+    fi
+
+    # Clone the git repository
+    echo "git clone --depth 1 --branch ${BRANCH} ${URL} ${SOURCE_PATH}"
+    git clone --depth 1 --branch ${BRANCH} ${URL} ${SOURCE_PATH}
+
+    # Check if git clone failed
+    if [ $? -ne 0 ]; then 
+        exit 1
+    fi
+
+    return 0
+}
+
+BuildAndInstall()
+{
+    if [ $# -lt 2 ]; then
+        echo "A source path and a build path are required to build the library."
+        exit 1
+    fi
+
+    SOURCE_PATH=$1
+    BUILD_PATH=$2
+    CMAKE_FLAGS="${@:3}"
+
+    CMAKE_CONFIGURE="cmake -H${SOURCE_PATH} -B${BUILD_PATH} ${CMAKE_FLAGS}"
+    CMAKE_BUILD_INSTALL="cmake --build ${BUILD_PATH} --target install -j"
+
+    echo $CMAKE_CONFIGURE
+    ${CMAKE_CONFIGURE}
+    if [ $? -ne 0 ]; then
+        exit 1
+    fi
+
+    echo $CMAKE_BUILD_INSTALL
+    ${CMAKE_BUILD_INSTALL}
+    if [ $? -ne 0 ]; then
+        exit 1
+    fi
+}
+
+# Set common source, build and install paths
+SCRIPT_PATH="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
+COMMON_DEPENDENCIES_PATH="$(realpath ${SCRIPT_PATH}/../dependencies)"
+COMMON_SOURCE_PATH=${COMMON_DEPENDENCIES_PATH}/source
+COMMON_BUILD_PATH=${COMMON_DEPENDENCIES_PATH}/build
+COMMON_INSTALL_PATH=${COMMON_DEPENDENCIES_PATH}/install
+COMMON_REQUIRED_PACKAGES="gcc g++ make cmake git ca-certificates"

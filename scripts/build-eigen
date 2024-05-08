@@ -1,0 +1,42 @@
+#!/bin/bash
+
+SCRIPT_PATH="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
+
+# Get source, build and install directories and common functions.
+source ${SCRIPT_PATH}/common
+
+EIGEN_NAME=eigen
+EIGEN_URL=https://gitlab.com/libeigen/eigen.git
+EIGEN_BRANCH=3.4.0
+EIGEN_SOURCE_PATH=${COMMON_SOURCE_PATH}/${EIGEN_NAME}
+EIGEN_BUILD_PATH=${COMMON_BUILD_PATH}/${EIGEN_NAME}
+EIGEN_INSTALL_PATH=${COMMON_INSTALL_PATH}/${EIGEN_NAME}
+EIGEN_DEPENDENCIES="libsuitesparse-dev libsuperlu-dev"
+EIGEN_FLAGS=(
+    -DCMAKE_INSTALL_PREFIX=${EIGEN_INSTALL_PATH}
+    -DCMAKE_BUILD_TYPE=Release
+    -DBUILD_TESTING=OFF
+    -DEIGEN_BUILD_DOC=OFF
+    -DEIGEN_BUILD_PKGCONFIG=OFF)
+
+# Skip if the library is already installed
+FindLibrary ${EIGEN_INSTALL_PATH}
+if [ $? -ne 0 ]; then
+    exit 0
+fi
+
+echo ""
+echo "*************************************************************"
+echo "*                      Build Eigen                          *"
+echo "*************************************************************"
+echo ""
+
+InstallPackages ${COMMON_REQUIRED_PACKAGES} ${EIGEN_DEPENDENCIES}
+GitClone ${EIGEN_SOURCE_PATH} ${EIGEN_URL} ${EIGEN_BRANCH}
+BuildAndInstall ${EIGEN_SOURCE_PATH} ${EIGEN_BUILD_PATH} ${EIGEN_FLAGS[@]}
+
+echo ""
+echo "*************************************************************"
+echo "*                  Build Eigen successful                   *"
+echo "*************************************************************"
+echo ""
