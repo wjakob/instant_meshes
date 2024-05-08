@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10.0)
 
 project(InstantMeshes VERSION 1.0.0 DESCRIPTION "Instant Meshes Library")
 
-execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/build-eigen)
+# execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/build-eigen)
 
 find_package(Eigen3 3.4 REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/install/eigen NO_DEFAULT_PATH)
 

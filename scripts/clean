@@ -1,0 +1,6 @@
+#!/bin/bash
+
+SCRIPT_PATH="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
+
+cd ${SCRIPT_PATH}/../
+rm -rf dependencies build install

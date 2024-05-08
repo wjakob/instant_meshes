@@ -18,6 +18,11 @@ EIGEN_FLAGS=(
     -DBUILD_TESTING=OFF
     -DEIGEN_BUILD_DOC=OFF
     -DEIGEN_BUILD_PKGCONFIG=OFF)
+    
+if [ "${1}" = "aarch64" ]; then
+    # echo "Build aarch64"
+    EIGEN_FLAGS+=(${COMMON_AARCH64_FLAGS[@]})
+fi
 
 # Skip if the library is already installed
 FindLibrary ${EIGEN_INSTALL_PATH}

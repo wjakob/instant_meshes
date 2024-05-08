@@ -5,14 +5,18 @@ SCRIPT_PATH="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null &&
 # Get source, build and install directories and common functions.
 source ${SCRIPT_PATH}/common
 
-INSTANT_MESHES_NAME=eigen
 INSTANT_MESHES_SOURCE_PATH=$(realpath ${SCRIPT_PATH}/..)
 INSTANT_MESHES_BUILD_PATH=${INSTANT_MESHES_SOURCE_PATH}/build
-INSTANT_MESHES_INSTALL_PATH=${INSTANT_MESHES_SOURCE_PATH}/install
+INSTANT_MESHES_INSTALL_PATH=${INSTANT_MESHES_SOURCE_PATH}/install/instant-meshes
 INSTANT_MESHES_DEPENDENCIES=""
 INSTANT_MESHES_FLAGS=(
     -DCMAKE_INSTALL_PREFIX=${INSTANT_MESHES_INSTALL_PATH}
     -DCMAKE_BUILD_TYPE=Release)
+    
+if [ "${1}" = "aarch64" ]; then
+    # echo "Build aarch64"
+    INSTANT_MESHES_FLAGS+=(${COMMON_AARCH64_FLAGS[@]})
+fi
 
 # Skip if the library is already installed
 FindLibrary ${INSTANT_MESHES_INSTALL_PATH}

@@ -1,0 +1,15 @@
+#!/bin/bash
+
+SCRIPT_PATH="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
+
+# Clean the previous build.
+${SCRIPT_PATH}/clean
+
+# Build the dependencies
+${SCRIPT_PATH}/build-eigen ${1}
+if [ $? -ne 0 ]; then
+    exit 0
+fi
+
+# Build instant-mehses
+${SCRIPT_PATH}/build-instant-meshes ${1}
