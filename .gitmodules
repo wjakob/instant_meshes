@@ -7,3 +7,6 @@
 [submodule "ext/pss"]
 	path = ext/pss
 	url = https://github.com/wjakob/pss
+[submodule "ext/tbb"]
+	path = ext/tbb
+	url = git@github.com:Matter-and-Form/tbb.git
