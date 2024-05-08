@@ -1,0 +1,36 @@
+#!/bin/bash
+
+SCRIPT_PATH="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
+
+# Get source, build and install directories and common functions.
+source ${SCRIPT_PATH}/common
+
+INSTANT_MESHES_NAME=eigen
+INSTANT_MESHES_SOURCE_PATH=$(realpath ${SCRIPT_PATH}/..)
+INSTANT_MESHES_BUILD_PATH=${INSTANT_MESHES_SOURCE_PATH}/build
+INSTANT_MESHES_INSTALL_PATH=${INSTANT_MESHES_SOURCE_PATH}/install
+INSTANT_MESHES_DEPENDENCIES=""
+INSTANT_MESHES_FLAGS=(
+    -DCMAKE_INSTALL_PREFIX=${INSTANT_MESHES_INSTALL_PATH}
+    -DCMAKE_BUILD_TYPE=Release)
+
+# Skip if the library is already installed
+FindLibrary ${INSTANT_MESHES_INSTALL_PATH}
+if [ $? -ne 0 ]; then
+    exit 0
+fi
+
+echo ""
+echo "*************************************************************"
+echo "*                  Build Instant Meshes                     *"
+echo "*************************************************************"
+echo ""
+
+InstallPackages ${COMMON_REQUIRED_PACKAGES} ${INSTANT_MESHES_DEPENDENCIES}
+BuildAndInstall ${INSTANT_MESHES_SOURCE_PATH} ${INSTANT_MESHES_BUILD_PATH} ${INSTANT_MESHES_FLAGS[@]}
+
+echo ""
+echo "*************************************************************"
+echo "*             Build Instant Meshes successful               *"
+echo "*************************************************************"
+echo ""
