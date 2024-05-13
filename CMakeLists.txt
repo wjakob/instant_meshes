@@ -4,7 +4,16 @@ project(InstantMeshes VERSION 1.0.0 DESCRIPTION "Instant Meshes Library")
 
 find_package(Eigen3 3.4 REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/install/eigen NO_DEFAULT_PATH)
 
+option(BUILD_SHARED_LIBS "Build InstantMeshes as a shared library." ON)
+
+if(BUILD_SHARED_LIBS)
+    set(LIBRARY_TYPE SHARED)
+else()
+    set(LIBRARY_TYPE STATIC)
+endif()
+
 # Build TBB
+set(TBB_TARGET tbb_static)
 set(TBB_BUILD_STATIC ON CACHE BOOL " " FORCE)
 set(TBB_BUILD_SHARED OFF CACHE BOOL " " FORCE)
 set(TBB_BUILD_TBBMALLOC OFF CACHE BOOL " " FORCE)
@@ -12,17 +21,9 @@ set(TBB_BUILD_TBBMALLOC_PROXY OFF CACHE BOOL " " FORCE)
 set(TBB_BUILD_TESTS OFF CACHE BOOL " " FORCE)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/ext/tbb ext_build/tbb)
-set_property(TARGET tbb_static tbb_def_files PROPERTY FOLDER "dependencies")
-
-option(BUILD_SHARED_LIBS "Build Open3D as a shared library." OFF)
+set_property(TARGET ${TBB_TARGET} tbb_def_files PROPERTY FOLDER "dependencies")
 
 set(LIBRARY_NAME InstantMeshes)
-
-if(BUILD_SHARED_LIBS)
-    set(LIBRARY_TYPE SHARED)
-else()
-    set(LIBRARY_TYPE STATIC)
-endif()
 
 # Add the library.
 add_library(${LIBRARY_NAME} ${LIBRARY_TYPE}
@@ -43,7 +44,7 @@ add_library(${LIBRARY_NAME} ${LIBRARY_TYPE}
     ${CMAKE_CURRENT_SOURCE_DIR}/src/subdivide.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ext/rply/rply.c)
 
-target_include_directories(${LIBRARY_NAME} PRIVATE 
+target_include_directories(${LIBRARY_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/ext/rply
     ${CMAKE_CURRENT_SOURCE_DIR}/ext/dset
@@ -53,7 +54,7 @@ target_include_directories(${LIBRARY_NAME} PRIVATE
 
 target_link_libraries(${LIBRARY_NAME} PRIVATE
     Eigen3::Eigen
-    tbb_static
+    ${TBB_TARGET}
     pthread
     dl)
 
@@ -61,7 +62,7 @@ target_link_libraries(${LIBRARY_NAME} PRIVATE
 set_target_properties(${LIBRARY_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 
 if(BUILD_SHARED_LIBS)
-    # Set .so major version so that libOpen3D.so.0 will be a symlink to libOpen3D.so.0.15.2
+    # Set .so major version so that libInstantMeshes.so.1 will be a symlink to libInstantMeshes.so.1.0.0
     set_target_properties(${LIBRARY_NAME} PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
 endif()
 
@@ -97,7 +98,7 @@ target_include_directories(${LIBRARY_NAME} INTERFACE
 
 
 # Install library binaries
-install(TARGETS ${LIBRARY_NAME} tbb_static
+install(TARGETS ${LIBRARY_NAME} ${TBB_TARGET}
     EXPORT ${LIBRARY_NAME}Targets 
     LIBRARY DESTINATION ${LIBRARY_LIBRARY_DIR}
     RUNTIME DESTINATION ${LIBRARY_RUNTIME_DIR})
