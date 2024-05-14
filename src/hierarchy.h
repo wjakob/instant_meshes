@@ -38,7 +38,7 @@ public:
     void build(bool deterministic = false,
                const ProgressCallback &progress = ProgressCallback());
 
-    void printStatistics() const;
+    void printStatistics(std::ostream& out) const;
     void resetSolution();
 
     inline ordered_lock &mutex() { return mMutex; }

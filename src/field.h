@@ -156,7 +156,7 @@ compute_position_singularities(const MultiResolutionHierarchy &mRes,
 class Serializer;
 class Optimizer {
 public:
-    Optimizer(MultiResolutionHierarchy &mRes, bool interactive);
+    Optimizer(MultiResolutionHierarchy &mRes, bool interactive = false, int concurrency = -1);
     void save(Serializer &state);
     void load(const Serializer &state);
 
@@ -219,4 +219,5 @@ protected:
     VectorXf mError;
 #endif
     Timer<> mTimer;
+    int mConcurrency;
 };

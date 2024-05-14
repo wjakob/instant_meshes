@@ -36,8 +36,7 @@ AdjacencyMatrix downsample_graph(const AdjacencyMatrix adj, const MatrixXf &V,
     uint32_t nLinks = adj[V.cols()] - adj[0];
     Entry *entries = new Entry[nLinks];
     Timer<> timer;
-    cout << "  Collapsing .. ";
-    cout.flush();
+    if (logger) *logger << "  Collapsing .. " << std::flush;
 
     tbb::parallel_for(
         tbb::blocked_range<uint32_t>(0u, (uint32_t) V.cols(), GRAIN_SIZE),
@@ -201,8 +200,8 @@ AdjacencyMatrix downsample_graph(const AdjacencyMatrix adj, const MatrixXf &V,
             SHOW_PROGRESS_RANGE(range, V_p.cols(), "Downsampling graph (6/6)");
         }
     );
-    cout << "done. (" << V.cols() << " -> " << V_p.cols() << " vertices, took "
-         << timeString(timer.value()) << ")" << endl;
+    if (logger) *logger << "done. (" << V.cols() << " -> " << V_p.cols() << " vertices, took "
+         << timeString(timer.value()) << ")" << std::endl;
     return adj_p;
 }
 
@@ -212,8 +211,7 @@ void generate_graph_coloring_deterministic(const AdjacencyMatrix &adj, uint32_t 
     if (progress)
         progress("Graph coloring", 0.0f);
     phases.clear();
-    cout << "    Coloring .. ";
-    cout.flush();
+    if (logger) *logger << "    Coloring .. " << std::flush;
     Timer<> timer;
 
     std::vector<uint32_t> perm(size);
@@ -262,8 +260,8 @@ void generate_graph_coloring_deterministic(const AdjacencyMatrix &adj, uint32_t 
     for (uint32_t i=0; i<size; ++i)
         phases[color[i]].push_back(i);
 
-    cout << "done. (" << phases.size() << " colors, took "
-         << timeString(timer.value()) << ")" << endl;
+    if (logger) *logger << "done. (" << phases.size() << " colors, took "
+         << timeString(timer.value()) << ")" << std::endl;
 }
 
 void generate_graph_coloring(const AdjacencyMatrix &adj, uint32_t size,
@@ -279,8 +277,7 @@ void generate_graph_coloring(const AdjacencyMatrix &adj, uint32_t size,
     if (progress)
         progress("Graph coloring", 0.0f);
     phases.clear();
-    cout << "    Coloring .. ";
-    cout.flush();
+    if (logger) *logger << "    Coloring .. " << std::flush;
 
     Timer<> timer;
 
@@ -385,8 +382,8 @@ void generate_graph_coloring(const AdjacencyMatrix &adj, uint32_t size,
     for (uint32_t i=0; i<size; ++i)
         phases[color[i]].push_back(i);
 
-    cout << "done. (" << phases.size() << " colors, took "
-         << timeString(timer.value()) << ")" << endl;
+    if (logger) *logger << "done. (" << phases.size() << " colors, took "
+         << timeString(timer.value()) << ")" << std::endl;
 }
 
 MultiResolutionHierarchy::MultiResolutionHierarchy() {
@@ -412,7 +409,7 @@ MultiResolutionHierarchy::MultiResolutionHierarchy() {
 
 void MultiResolutionHierarchy::build(bool deterministic, const ProgressCallback &progress) {
     std::vector<std::vector<uint32_t>> phases;
-    cout << "Processing level 0 .." << endl;
+    if (logger) *logger << "Processing level 0 .." << std::endl;
     if (deterministic)
         generate_graph_coloring_deterministic(mAdj[0], mV[0].cols(), phases, progress);
     else
@@ -425,7 +422,7 @@ void MultiResolutionHierarchy::build(bool deterministic, const ProgressCallback 
     mCQ.push_back(MatrixXf());
     mCQw.push_back(VectorXf());
 
-    cout << "Building multiresolution hierarchy .." << endl;
+    if (logger) *logger << "Building multiresolution hierarchy .." << std::endl;
     Timer<> timer;
     for (int i=0; i<MAX_DEPTH; ++i) {
         std::vector<std::vector<uint32_t>> phases_p;
@@ -460,7 +457,7 @@ void MultiResolutionHierarchy::build(bool deterministic, const ProgressCallback 
     }
     mIterationsQ = mIterationsO = -1;
     mFrozenO = mFrozenQ = false;
-    cout << "Hierarchy construction took " << timeString(timer.value()) << "." << endl;
+    if (logger) *logger << "Hierarchy construction took " << timeString(timer.value()) << "." << std::endl;
 }
 
 void init_random_tangent(const MatrixXf &N, MatrixXf &Q) {
@@ -497,8 +494,7 @@ void init_random_position(const MatrixXf &P, const MatrixXf &N, MatrixXf &O, Flo
 }
 
 void MultiResolutionHierarchy::resetSolution() {
-    cout << "Setting to random solution .. ";
-    cout.flush();
+    if (logger) *logger << "Setting to random solution .. " << std::flush;
     Timer<> timer;
     if (mQ.size() != mV.size()) {
         mQ.resize(mV.size());
@@ -509,7 +505,7 @@ void MultiResolutionHierarchy::resetSolution() {
         init_random_position(mV[i], mN[i], mO[i], mScale);
     }
     mFrozenO = mFrozenQ = false;
-    cout << "done. (took " << timeString(timer.value()) << ")" << endl;
+    if (logger) *logger << "done. (took " << timeString(timer.value()) << ")" << std::endl;
 }
 
 void MultiResolutionHierarchy::free() {
@@ -663,7 +659,7 @@ void MultiResolutionHierarchy::clearConstraints() {
     if (levels() == 0)
         return;
     if (mCQ[0].size() == 0)
-        cout << "Allocating memory for constraints .." << endl;
+        if (logger) *logger << "Allocating memory for constraints .." << std::endl;
     for (int i=0; i<levels(); ++i) {
         mCQ[i].resize(3, size(i));
         mCO[i].resize(3, size(i));
@@ -685,8 +681,8 @@ void MultiResolutionHierarchy::propagateSolution(int rosy) {
     else
         throw std::runtime_error("Unsupported symmetry!");
 
-    cout << "Propagating updated solution.. ";
-    cout.flush();
+    if (logger) *logger << "Propagating updated solution.. " << std::flush;
+    
     Timer<> timer;
     for (int l=0; l<levels()-1; ++l)  {
         const MatrixXf &N = mN[l];
@@ -721,14 +717,13 @@ void MultiResolutionHierarchy::propagateSolution(int rosy) {
             }
         );
     }
-    cout << "done. (took " << timeString(timer.value()) << ")" << endl;
+    if (logger) *logger << "done. (took " << timeString(timer.value()) << ")" << std::endl;
 }
 
 void MultiResolutionHierarchy::propagateConstraints(int rosy, int posy) {
     if (levels() == 0)
         return;
-    cout << "Propagating constraints .. ";
-    cout.flush();
+    if (logger) *logger << "Propagating constraints .. " << std::flush;
     Timer<> timer;
 
     auto compat_orient = compat_orientation_extrinsic_2;
@@ -833,10 +828,10 @@ void MultiResolutionHierarchy::propagateConstraints(int rosy, int posy) {
             }
         );
     }
-    cout << "done. (took " << timeString(timer.value()) << ")" << endl;
+    if (logger) *logger << "done. (took " << timeString(timer.value()) << ")" << std::endl;
 }
 
-void MultiResolutionHierarchy::printStatistics() const {
+void MultiResolutionHierarchy::printStatistics(std::ostream& out) const {
     if (levels() == 0)
         return;
     std::ostringstream oss;
@@ -857,17 +852,17 @@ void MultiResolutionHierarchy::printStatistics() const {
     cvertex_s = sizeInBytes(mF);
     cedge_s = sizeInBytes(mE2E);
 
-    cout << endl;
-    cout << "Multiresolution hierarchy statistics:" << endl;
-    cout << "    Field data          : " << memString(field_s) << endl;
-    cout << "    Vertex data         : " << memString(V_s + N_s + A_s) << " (level 0: "
-        << memString(sizeInBytes(mV[0]) + sizeInBytes(mN[0]) + sizeInBytes(mA[0])) << ")" << endl;
-    cout << "    Adjacency matrices  : " << memString(adj_s) << " (level 0: "
-        << memString((mAdj[0][mV[0].cols()] - mAdj[0][0]) * sizeof(Link)) << ")" << endl;
-    cout << "    Tree connectivity   : " << memString(tree_s) << endl;
-    cout << "    Vertex indices      : " << memString(cvertex_s) << endl;
-    cout << "    Edge connectivity   : " << memString(cedge_s) << endl;
-    cout << "    Parallel phases     : " << memString(phases_s) << endl;
-    cout << "    Total               : "
-         << memString(field_s + V_s + N_s + A_s + adj_s + tree_s + cedge_s + cvertex_s + phases_s) << endl;
+    out << std::endl;
+    out << "Multiresolution hierarchy statistics:" << std::endl;
+    out << "    Field data          : " << memString(field_s) << std::endl;
+    out << "    Vertex data         : " << memString(V_s + N_s + A_s) << " (level 0: "
+        << memString(sizeInBytes(mV[0]) + sizeInBytes(mN[0]) + sizeInBytes(mA[0])) << ")" << std::endl;
+    out << "    Adjacency matrices  : " << memString(adj_s) << " (level 0: "
+        << memString((mAdj[0][mV[0].cols()] - mAdj[0][0]) * sizeof(Link)) << ")" << std::endl;
+    out << "    Tree connectivity   : " << memString(tree_s) << std::endl;
+    out << "    Vertex indices      : " << memString(cvertex_s) << std::endl;
+    out << "    Edge connectivity   : " << memString(cedge_s) << std::endl;
+    out << "    Parallel phases     : " << memString(phases_s) << std::endl;
+    out << "    Total               : "
+         << memString(field_s + V_s + N_s + A_s + adj_s + tree_s + cedge_s + cvertex_s + phases_s) << std::endl;
 }

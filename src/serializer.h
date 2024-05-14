@@ -42,7 +42,7 @@ public:
 
     #define MISSING_KEY(key) \
         if (mCompatibilityMode) {\
-            cerr << "Warning: Serializer: could not find element \"" + mPrefixStack.top() + key + "\"!" << endl; \
+            cerr << "Warning: Serializer: could not find element \"" + mPrefixStack.top() + key + "\"!" << std::endl; \
             return false; \
         } else { \
             throw std::runtime_error("Serializer: could not find element \"" + mPrefixStack.top() + key + "\"!"); \

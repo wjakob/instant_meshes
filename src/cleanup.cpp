@@ -167,7 +167,7 @@ void remove_nonmanifold(MatrixXu &F, MatrixXf &V, MatrixXf &Nf) {
     }
 
     if (nm_vert > 0 || nm_edge > 0)
-        cout << "Non-manifold elements:  vertices=" << nm_vert << ", edges=" << nm_edge << endl;
+        if (logger) *logger << "Non-manifold elements:  vertices=" << nm_vert << ", edges=" << nm_edge << std::endl;
 
     uint32_t nFaces = 0, nFacesOrig = F.cols();
     for (uint32_t f = 0; f < (uint32_t) F.cols(); ++f) {
@@ -183,7 +183,7 @@ void remove_nonmanifold(MatrixXu &F, MatrixXf &V, MatrixXf &Nf) {
     if (nFacesOrig != nFaces) {
         F.conservativeResize(F.rows(), nFaces);
         Nf.conservativeResize(Nf.rows(), nFaces);
-        cout << "Faces reduced from " << nFacesOrig << " -> " << nFaces << endl;
+        if (logger) *logger << "Faces reduced from " << nFacesOrig << " -> " << nFaces << std::endl;
     }
 }
 

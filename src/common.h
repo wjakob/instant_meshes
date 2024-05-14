@@ -66,9 +66,9 @@ typedef Eigen::Matrix<Float, 2, 2>                              Matrix2f;
 typedef Eigen::Matrix<Float, 3, 3>                              Matrix3f;
 typedef Eigen::Matrix<Float, 4, 4>                              Matrix4f;
 
-using std::cout;
+static std::ostream* logger = nullptr;
+
 using std::cerr;
-using std::endl;
 using namespace std::placeholders;
 
 /* A callback to inform the GUI about progress of an operation */

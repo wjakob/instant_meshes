@@ -1308,7 +1308,7 @@ compute_position_singularities(const MultiResolutionHierarchy &mRes,
 
 bool move_orientation_singularity(MultiResolutionHierarchy &mRes, uint32_t f_src, uint32_t f_target) {
     int edge_idx[2], found = 0;
-    cout << "Moving orientation singularity from face " << f_src << " to " << f_target << endl;
+    if (logger) *logger << "Moving orientation singularity from face " << f_src << " to " << f_target << std::endl;
     const MatrixXu &F = mRes.F();
     const MatrixXf &N = mRes.N(), &Q = mRes.Q();
     AdjacencyMatrix &adj = mRes.adj();
@@ -1330,10 +1330,10 @@ bool move_orientation_singularity(MultiResolutionHierarchy &mRes, uint32_t f_src
 
     index = modulo(index, 4);
     if (index == 0) {
-        cout << "Warning: Starting point was not a singularity!" << endl;
+        if (logger) *logger << "Warning: Starting point was not a singularity!" << std::endl;
         return false;
     } else {
-        cout << "Singularity index is " << index << endl;
+        if (logger) *logger << "Singularity index is " << index << std::endl;
     }
 
     Link &l0 = search_adjacency(adj, edge_idx[0], edge_idx[1]);
@@ -1358,7 +1358,7 @@ bool move_orientation_singularity(MultiResolutionHierarchy &mRes, uint32_t f_src
 }
 
 bool move_position_singularity(MultiResolutionHierarchy &mRes, uint32_t f_src, uint32_t f_target) {
-    cout << "Moving position singularity from face " << f_src << " to " << f_target << endl;
+    if (logger) *logger << "Moving position singularity from face " << f_src << " to " << f_target << std::endl;
     const MatrixXu &F = mRes.F();
     const MatrixXf &N = mRes.N(), &Q = mRes.Q();
     AdjacencyMatrix &adj = mRes.adj();
@@ -1399,13 +1399,13 @@ bool move_position_singularity(MultiResolutionHierarchy &mRes, uint32_t f_src, u
     }
 
     if (index == Vector2i::Zero()) {
-        cout << "Warning: Starting point was not a singularity!" << endl;
+        if (logger) *logger << "Warning: Starting point was not a singularity!" << std::endl;
         return false;
     } else if (index.array().abs().sum() != 1) {
-        cout << "Warning: Starting point is a high-degree singularity " << index.transpose() << endl;
+        if (logger) *logger << "Warning: Starting point is a high-degree singularity " << index.transpose() << std::endl;
         return false;
     } else {
-        cout << "Singularity index is " << index.transpose() << endl;
+        if (logger) *logger << "Singularity index is " << index.transpose() << std::endl;
     }
 
     int index_f[2], found = 0;
@@ -1450,16 +1450,17 @@ bool move_position_singularity(MultiResolutionHierarchy &mRes, uint32_t f_src, u
         index += rshift(l.ivar[1].shift(), modulo(-best[j], 4)) -
                  rshift(l.ivar[0].shift(), modulo(-best[i], 4));
     }
-    cout << "Afterwards = " << index.transpose() << endl;
+    if (logger) *logger << "Afterwards = " << index.transpose() << std::endl;
 
     return true;
 }
 
-Optimizer::Optimizer(MultiResolutionHierarchy &mRes, bool interactive)
+Optimizer::Optimizer(MultiResolutionHierarchy &mRes, bool interactive, int concurrency)
     : mRes(mRes), mRunning(true), mOptimizeOrientations(false),
       mOptimizePositions(false), mLevel(-1), mLevelIterations(0),
       mHierarchical(false), mRoSy(-1), mPoSy(-1), mExtrinsic(true),
-      mInteractive(interactive), mLastUpdate(0.0f), mProgress(1.f) {
+      mInteractive(interactive), mLastUpdate(0.0f), mProgress(1.f),
+      mConcurrency(concurrency) {
     mThread = std::thread(&Optimizer::run, this);
 }
 
@@ -1534,12 +1535,11 @@ void Optimizer::wait() {
     while (mRunning && (mOptimizePositions || mOptimizeOrientations))
         mCond.wait(mRes.mutex());
 }
-extern int nprocs;
 
 void Optimizer::run() {
     const int levelIterations = 6;
     uint32_t operations = 0;
-    tbb::task_scheduler_init init(nprocs);
+    tbb::task_scheduler_init init(mConcurrency);
 
     auto progress = [&](uint32_t ops) {
         operations += ops;
