@@ -13,6 +13,9 @@
 
 #include "bvh.h"
 
+namespace InstantMeshes
+{
+
 struct Bins {
     static const int BIN_COUNT = 8;
     Bins() { memset(counts, 0, sizeof(uint32_t) * BIN_COUNT); }
@@ -895,3 +898,4 @@ void BVH::refitBoundingBoxes(uint32_t node_idx) {
     }
 }
 
+}

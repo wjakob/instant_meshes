@@ -15,6 +15,9 @@
 #include "subdivide.h"
 #include "dedge.h"
 
+namespace InstantMeshes
+{
+
 void subdivide(MatrixXu &F, MatrixXf &V, VectorXu &V2E, VectorXu &E2E,
                VectorXb &boundary, VectorXb &nonmanifold, Float maxLength,
                bool deterministic,
@@ -177,4 +180,5 @@ void subdivide(MatrixXu &F, MatrixXf &V, VectorXu &V2E, VectorXu &E2E,
     if (logger) *logger << "done. (split " << nSplit << " edges, took "
          << timeString(timer.value()) << ", new V=" << V.cols()
          << ", F=" << F.cols() << ", took " << timeString(timer.value()) << ")" << std::endl;
+}
 }

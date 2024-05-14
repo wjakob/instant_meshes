@@ -23,6 +23,9 @@ extern "C" {
     #include "rply.h"
 }
 
+namespace InstantMeshes
+{
+
 void load_mesh_or_pointcloud(const std::string &filename, MatrixXu &F, MatrixXf &V, MatrixXf &N,
               const ProgressCallback &progress) {
     std::string extension;
@@ -620,4 +623,5 @@ void write_obj(const std::string &filename, const MatrixXu &F,
         if (irregular.size() > 0) out << irregular.size() << " irregular faces, ";
         out << "took " << timeString(timer.value()) << ")" << std::endl;
     }
+}
 }

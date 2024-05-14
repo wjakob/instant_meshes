@@ -19,6 +19,9 @@
 #include <parallel_stable_sort.h>
 #include <pcg32.h>
 
+namespace InstantMeshes
+{
+
 AdjacencyMatrix downsample_graph(const AdjacencyMatrix adj, const MatrixXf &V,
                                  const MatrixXf &N, const VectorXf &A,
                                  MatrixXf &V_p, MatrixXf &N_p, VectorXf &A_p,
@@ -865,4 +868,6 @@ void MultiResolutionHierarchy::printStatistics(std::ostream& out) const {
     out << "    Parallel phases     : " << memString(phases_s) << std::endl;
     out << "    Total               : "
          << memString(field_s + V_s + N_s + A_s + adj_s + tree_s + cedge_s + cvertex_s + phases_s) << std::endl;
+}
+
 }

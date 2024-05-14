@@ -15,6 +15,9 @@
 #include "meshstats.h"
 #include "dedge.h"
 
+namespace InstantMeshes
+{
+
 MeshStats compute_mesh_stats(const MatrixXu &F, const MatrixXf &V,
                              bool deterministic,
                              const ProgressCallback &progress) {
@@ -145,4 +148,5 @@ void compute_dual_vertex_areas(const MatrixXu &F, const MatrixXf &V,
     );
 
     if (logger) *logger << "done. (took " << timeString(timer.value()) << ")" << std::endl;
+}
 }

@@ -15,6 +15,9 @@
 
 #include "common.h"
 
+namespace InstantMeshes
+{
+
 extern void
 load_mesh_or_pointcloud(const std::string &filename, MatrixXu &F,
                         MatrixXf &V, MatrixXf &N,
@@ -54,3 +57,4 @@ extern void write_ply(const std::string &filename, const MatrixXu &F,
                       const MatrixXf &UV = MatrixXf(),
                       const MatrixXf &C = MatrixXf(),
                       const ProgressCallback &progress = ProgressCallback());
+}

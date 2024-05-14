@@ -16,6 +16,9 @@
 #include "field.h"
 #include "serializer.h"
 
+namespace InstantMeshes
+{
+
 static const Float sqrt_3_over_4 = 0.866025403784439f;
 static const uint32_t INVALID = (uint32_t) -1;
 
@@ -1691,3 +1694,4 @@ void Optimizer::run() {
     }
 }
 
+}

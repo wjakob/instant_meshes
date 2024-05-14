@@ -42,6 +42,9 @@ typedef float Float;
 typedef double Float;
 #endif
 
+namespace InstantMeshes
+{
+
 /* Useful Eigen typedefs based on the current precision */
 typedef Eigen::Matrix<int32_t, 2, 1>                            Vector2i;
 typedef Eigen::Matrix<int32_t, 3, 1>                            Vector3i;
@@ -373,4 +376,5 @@ inline Vector3f hsv_to_rgb(Float h, Float s, Float v) {
         case 4:  return Vector3f(t, p, v); break;
         default: return Vector3f(v, p, q); break;
     }
+}
 }

@@ -15,6 +15,9 @@
 
 #include "common.h"
 
+namespace InstantMeshes
+{
+
 static const uint32_t INVALID = (uint32_t) -1;
 
 inline uint32_t dedge_prev_3(uint32_t e) { return (e % 3 == 0) ? e + 2 : e - 1; }
@@ -29,3 +32,4 @@ extern void build_dedge(const MatrixXu &F, const MatrixXf &V, VectorXu &V2E,
                          VectorXu &E2E, VectorXb &boundary, VectorXb &nonManifold,
                          const ProgressCallback &progress = ProgressCallback(),
                          bool quiet = false);
+}

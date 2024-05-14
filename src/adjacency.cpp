@@ -21,6 +21,9 @@
 #include <set>
 #include <map>
 
+namespace InstantMeshes
+{
+
 AdjacencyMatrix generate_adjacency_matrix_uniform(
     const MatrixXu &F, const VectorXu &V2E, const VectorXu &E2E,
     const VectorXb &nonManifold, const ProgressCallback &progress) {
@@ -332,4 +335,5 @@ AdjacencyMatrix generate_adjacency_matrix_pointcloud(
 
     if (logger) *logger << "done. (took " << timeString(timer.value()) << ")" << std::endl;
     return adj;
+}
 }

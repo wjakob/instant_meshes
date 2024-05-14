@@ -13,6 +13,9 @@
 
 #include "dedge.h"
 
+namespace InstantMeshes
+{
+
 void build_dedge(const MatrixXu &F, const MatrixXf &V, VectorXu &V2E,
                          VectorXu &E2E, VectorXb &boundary, VectorXb &nonManifold,
                          const ProgressCallback &progress, bool quiet) {
@@ -153,4 +156,5 @@ void build_dedge(const MatrixXu &F, const MatrixXf &V, VectorXu &V2E,
             out << isolatedCounter << " isolated vertices, ";
         out << "took " << timeString(timer.value()) << ")" << std::endl;
     }
+}
 }

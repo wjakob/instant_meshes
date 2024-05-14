@@ -16,6 +16,9 @@
 
 #include "adjacency.h"
 
+namespace InstantMeshes
+{
+
 class Serializer;
 
 extern AdjacencyMatrix
@@ -129,3 +132,4 @@ public:
     int mIterationsO;
     uint32_t mTotalSize;
 };
+}

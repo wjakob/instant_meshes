@@ -19,6 +19,9 @@
 #include <map>
 #include <set>
 
+namespace InstantMeshes
+{
+
 bool smooth_curve(const BVH *bvh, const VectorXu &E2E, std::vector<CurvePoint> &curve, bool watertight) {
     const MatrixXu &F = *bvh->F();
     const MatrixXf &V = *bvh->V(), &N = *bvh->N();
@@ -221,4 +224,5 @@ inline bool astar(const MatrixXu &F, const VectorXu &E2E, const MatrixXf &V, uin
     }
     std::reverse(path.begin(), path.end());
     return true;
+}
 }

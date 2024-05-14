@@ -24,6 +24,9 @@
 #include <tuple>
 #include <set>
 
+namespace InstantMeshes
+{
+
 typedef std::pair<uint32_t, uint32_t> Edge;
 
 void
@@ -1013,4 +1016,5 @@ void extract_faces(std::vector<std::vector<TaggedLink> > &adj, MatrixXf &O,
     F_vec[0].swap(Nf);
     if (logger) *logger << "done. (took " << timeString(timer.value()) << ")" << std::endl;
 
+}
 }

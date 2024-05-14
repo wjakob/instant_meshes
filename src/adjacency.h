@@ -17,6 +17,9 @@
 
 #include "common.h"
 
+namespace InstantMeshes
+{
+
 /* Stores integer jumps between nodes of the adjacency matrix */
 struct IntegerVariable {
     unsigned short rot : 2;
@@ -75,3 +78,4 @@ extern AdjacencyMatrix generate_adjacency_matrix_pointcloud(
     MatrixXf &V, MatrixXf &N, const BVH *bvh, MeshStats &stats,
     uint32_t knn_points, bool deterministic = false,
     const ProgressCallback &progress = ProgressCallback());
+}

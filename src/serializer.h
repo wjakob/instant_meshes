@@ -19,6 +19,9 @@
 #include <set>
 #include <stack>
 
+namespace InstantMeshes
+{
+
 class Serializer {
 public:
     Serializer();
@@ -322,3 +325,4 @@ protected:
     mutable std::stack<std::string> mPrefixStack;
     bool mCompatibilityMode;
 };
+}

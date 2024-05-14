@@ -17,6 +17,9 @@
 #include <map>
 #include <set>
 
+namespace InstantMeshes
+{
+
 extern void
 generate_smooth_normals(const MatrixXu &F, const MatrixXf &V, MatrixXf &N,
                         bool deterministic,
@@ -41,3 +44,5 @@ generate_crease_normals(
     const VectorXb boundary, const VectorXb &nonManifold, Float angleThreshold,
     MatrixXf &N, std::set<uint32_t> &creases,
     const ProgressCallback &progress = ProgressCallback());
+
+}

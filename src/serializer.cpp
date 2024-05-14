@@ -18,6 +18,9 @@ extern "C" {
     #include "rply.h"
 }
 
+namespace InstantMeshes
+{
+
 Serializer::Serializer() : mCompatibilityMode(false) { mPrefixStack.push(""); }
 
 bool Serializer::isSerializedFile(const std::string &filename) {
@@ -461,4 +464,6 @@ std::ostream &operator<<(std::ostream &os, const Serializer &state) {
     }
     os << std::endl << "]";
     return os;
+}
+
 }
