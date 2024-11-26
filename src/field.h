@@ -161,7 +161,13 @@ class Optimizer {
 public:
     Optimizer(MultiResolutionHierarchy &mRes, bool interactive = false, int concurrency = -1);
     ~Optimizer() { if (mThread.joinable()) shutdown(); }
-    
+
+    Optimizer(Optimizer&& other) = delete;
+    Optimizer& operator=(Optimizer&& other) = delete;
+    Optimizer(const Optimizer& other) = delete;
+    Optimizer& operator=(const Optimizer& other) = delete;
+
+
     void save(Serializer &state);
     void load(const Serializer &state);
 

@@ -103,24 +103,27 @@ public:
         bool deterministic = false,
         const ProgressCallback& progress = ProgressCallback());
 
-    AdjacencyMatrix(AdjacencyMatrix&& other) : _links(std::move(other._links)), _rows(std::move(other._rows)) {}
+    AdjacencyMatrix(AdjacencyMatrix&& other) : mLinks(std::move(other.mLinks)), mRows(std::move(other.mRows)) {}
 
     AdjacencyMatrix& operator=(AdjacencyMatrix&& other)
     {
-        _links = std::move(other._links);
-        _rows = std::move(other._rows);
+        mLinks = std::move(other.mLinks);
+        mRows = std::move(other.mRows);
         return *this;
     }
 
     AdjacencyMatrix(const AdjacencyMatrix& other) = delete;
     AdjacencyMatrix& operator=(const AdjacencyMatrix& other) = delete;
 
-    Link*& operator[] (size_t index) { return _rows.at(index); }
-    Link* operator[] (size_t index) const { return _rows.at(index); }
+    //Link*& operator[] (size_t index) { return mRows[index]; }
+    Link* operator[] (size_t index) const { return mRows[index]; }
+
+    const std::vector<Link>& Links() const { return mLinks; }
+    const std::vector<Link*>& Rows() const { return mRows; }
 
 public:
-    std::vector<Link> _links;
-    std::vector<Link*> _rows;
+    std::vector<Link> mLinks;
+    std::vector<Link*> mRows;
 };
 
 inline Link &search_adjacency(AdjacencyMatrix &adj, uint32_t i, uint32_t j) {

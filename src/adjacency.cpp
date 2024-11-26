@@ -43,22 +43,22 @@ AdjacencyMatrix::AdjacencyMatrix(
         linkCount += adj_id[j].size();
     }
 
-    _rows.resize(adj_id.size() + 1);
-    _links.resize(linkCount);
-    _rows.at(0) = _links.data();
+    mRows.resize(adj_id.size() + 1);
+    mLinks.resize(linkCount);
 
+    mRows[0] = mLinks.data();
     for (uint32_t i=0; i < adj_id.size(); ++i)
     {
-        _rows.at(i+1) = _rows.at(i) + adj_id.at(i).size();
+        mRows[i+1] = mRows[i] + adj_id[i].size();
     }
 
     for (uint32_t j=0; j<adj_id.size(); ++j)
     {
         for (uint32_t k=0; k<adj_id[j].size(); ++k)
         {
-            _rows[j][k].id = adj_id[j][k];
-            _rows[j][k].ivar_uint32 = adj_ivar[j][k];
-            _rows[j][k].weight = adj_weight[j][k];
+            mRows[j][k].id = adj_id[j][k];
+            mRows[j][k].ivar_uint32 = adj_ivar[j][k];
+            mRows[j][k].weight = adj_weight[j][k];
         }
     }
 }
@@ -83,7 +83,7 @@ AdjacencyMatrix::AdjacencyMatrix(
                 uint32_t edge = V2E[i], stop = edge;
                 if (nonManifold[i] || edge == INVALID) {
                     //neighborhoodSize[i+1] = 0;
-                    adjacencySizes.at(i) = 0;
+                    adjacencySizes[i] = 0;
                     continue;
                 }
                 uint32_t nNeighbors = 0;
@@ -97,7 +97,7 @@ AdjacencyMatrix::AdjacencyMatrix(
                     nNeighbors++;
                 } while (edge != stop);
                 //neighborhoodSize[i+1] = nNeighbors;
-                adjacencySizes.at(i) = nNeighbors;
+                adjacencySizes[i] = nNeighbors;
             }
             SHOW_PROGRESS_RANGE(range, V2E.size(), "Generating adjacency matrix (1/2)");
         }
@@ -105,19 +105,16 @@ AdjacencyMatrix::AdjacencyMatrix(
 
     const uint32_t linkCount = std::accumulate(adjacencySizes.begin(), adjacencySizes.end(), 0);
 
-    _rows.resize(adjacencySizes.size() + 1);
-    _links.resize(linkCount);
+    mRows.resize(adjacencySizes.size() + 1);
+    mLinks.resize(linkCount);
 
-    _rows.at(0) = _links.data();
-
+    mRows[0] = mLinks.data();
     for (uint32_t i=0; i < adjacencySizes.size(); ++i)
     {
-        _rows.at(i+1) = _rows.at(i) + adjacencySizes.at(i);
-        assert(_rows[i] < _links.data() + linkCount);
+        mRows[i+1] = mRows[i] + adjacencySizes[i];
     }
-    assert(_rows.at(adjacencySizes.size()) == _links.data() + linkCount);
 
-    auto& adj = _rows;
+    auto& adj = mRows;
 
     tbb::parallel_for(
         tbb::blocked_range<uint32_t>(0u, (uint32_t) V2E.size(), GRAIN_SIZE),
@@ -171,7 +168,7 @@ AdjacencyMatrix::AdjacencyMatrix(
                 uint32_t edge = V2E[i], stop = edge;
                 if (nonManifold[i] || edge == INVALID) {
                     //neighborhoodSize[i+1] = 0;
-                    adjacencySizes.at(i) = 0;
+                    adjacencySizes[i] = 0;
                     continue;
                 }
                 uint32_t nNeighbors = 0;
@@ -185,7 +182,7 @@ AdjacencyMatrix::AdjacencyMatrix(
                     nNeighbors++;
                 } while (edge != stop);
                 //neighborhoodSize[i+1] = nNeighbors;
-                adjacencySizes.at(i) = nNeighbors;
+                adjacencySizes[i] = nNeighbors;
             }
             SHOW_PROGRESS_RANGE(range, V2E.size(), "Computing cotangent Laplacian (1/2)");
         }
@@ -193,16 +190,14 @@ AdjacencyMatrix::AdjacencyMatrix(
 
     const uint32_t linkCount = std::accumulate(adjacencySizes.begin(), adjacencySizes.end(), 0);
 
-    _rows.resize(adjacencySizes.size() + 1);
-    _links.resize(linkCount);
-    _rows[0] = _links.data();
+    mRows.resize(adjacencySizes.size() + 1);
+    mLinks.resize(linkCount);
 
+    mRows[0] = mLinks.data();
     for (uint32_t i=0; i < adjacencySizes.size(); ++i)
     {
-        _rows.at(i+1) = _rows.at(i) + adjacencySizes.at(i);
-        assert(_rows[i] < _links.data() + linkCount);
+        mRows[i+1] = mRows[i] + adjacencySizes[i];
     }
-    assert(_rows.at(adjacencySizes.size()) == _links.data() + linkCount);
 
     tbb::parallel_for(
         tbb::blocked_range<uint32_t>(0u, (uint32_t)V.cols(), GRAIN_SIZE),
@@ -211,7 +206,7 @@ AdjacencyMatrix::AdjacencyMatrix(
                 uint32_t edge = V2E[i], stop = edge;
                 if (nonManifold[i] || edge == INVALID)
                     continue;
-                Link *ptr = _rows.at(i);
+                Link *ptr = mRows[i];
 
                 int it = 0;
                 do {
@@ -317,7 +312,7 @@ AdjacencyMatrix::AdjacencyMatrix(
                     adj_set[ctr++] = k.second;
                     dset.unite(k.second, i);
                 }
-                adjacencySizes.at(i) = ctr;
+                adjacencySizes[i] = ctr;
             }
             SHOW_PROGRESS_RANGE(range, V.cols(), "Generating adjacency matrix");
         }
@@ -340,7 +335,7 @@ AdjacencyMatrix::AdjacencyMatrix(
                 if (value == INVALID) break;
             }
             if (!found)
-                adjacencySizes.at(k)++;
+                adjacencySizes[k]++;
         }
     }
 
@@ -348,7 +343,7 @@ AdjacencyMatrix::AdjacencyMatrix(
     for (uint32_t i=0; i<V.cols(); ++i)
     {
         const uint32_t dsetSize = dset_size[dset.find(i)];
-        uint32_t& adjacencySize = adjacencySizes.at(i);
+        uint32_t& adjacencySize = adjacencySizes[i];
         if (dsetSize < V.cols() * 0.01f)
         {
             adjacencySize = INVALID;
@@ -362,24 +357,22 @@ AdjacencyMatrix::AdjacencyMatrix(
 
     if (logger) *logger << "allocating " << memString(sizeof(Link) * linkCount) << " .. " << std::flush;
 
-    _rows.resize(adjacencySizes.size() + 1);
-    _links.resize(linkCount);
-    _rows[0] = _links.data();
+    mRows.resize(adjacencySizes.size() + 1);
+    mLinks.resize(linkCount);
+    mRows[0] = mLinks.data();
 
     for (uint32_t i=0; i < adjacencySizes.size(); ++i)
     {
         const uint32_t size = adjacencySizes[i];
         if (size == INVALID)
         {
-            _rows.at(i+1) = _rows.at(i);
+            mRows[i+1] = mRows[i];
         }
         else
         {
-            _rows.at(i+1) = _rows.at(i) + size;
+            mRows[i+1] = mRows[i] + size;
         }
-        assert(_rows[i] <= _links.data() + linkCount);
     }
-    assert(_rows.at(adjacencySizes.size()) == _links.data() + linkCount);
 
     VectorXu adj_offset(V.cols());
     adj_offset.setZero();
@@ -389,14 +382,14 @@ AdjacencyMatrix::AdjacencyMatrix(
         [&](const tbb::blocked_range<uint32_t> &range) {
             for (uint32_t i = range.begin(); i < range.end(); ++i) {
                 uint32_t *adj_set_i = adj_sets + (size_t) i * (size_t) knn_points;
-                if (adjacencySizes.at(i) == INVALID)
+                if (adjacencySizes[i] == INVALID)
                     continue;
 
                 for (uint32_t j=0; j<knn_points; ++j) {
                     uint32_t k = adj_set_i[j];
                     if (k == INVALID)
                         break;
-                    _rows[i][atomicAdd(&adj_offset.coeffRef(i), 1)-1] = Link(k);
+                    mRows[i][atomicAdd(&adj_offset.coeffRef(i), 1)-1] = Link(k);
 
                     uint32_t *adj_set_k = adj_sets + (size_t) k * (size_t) knn_points;
                     bool found = false;
@@ -406,7 +399,7 @@ AdjacencyMatrix::AdjacencyMatrix(
                         if (value == INVALID) break;
                     }
                     if (!found)
-                        _rows[k][atomicAdd(&adj_offset.coeffRef(k), 1)-1] = Link(i);
+                        mRows[k][atomicAdd(&adj_offset.coeffRef(k), 1)-1] = Link(i);
                 }
             }
         }
@@ -562,49 +555,22 @@ AdjacencyMatrix::AdjacencyMatrix(
                     }
                 }
                 neighborhoodSize[i+1] = size;
-                adjacencySizes.at(i) = size;
+                adjacencySizes[i] = size;
             }
             SHOW_PROGRESS_RANGE(range, V_p.cols(), "Downsampling graph (5/6)");
         }
     );
 
-#if 1
-
-    neighborhoodSize[0] = 0;
-    for (uint32_t i=0; i<neighborhoodSize.size()-1; ++i)
-        neighborhoodSize[i+1] += neighborhoodSize[i];
-
-    uint32_t nLinks_p = neighborhoodSize[neighborhoodSize.size()-1];
-
-#endif
     const uint32_t linkCount = std::accumulate(adjacencySizes.begin(), adjacencySizes.end(), 0);
 
-    const size_t adjacencySizeCount = adjacencySizes.size();
-    const size_t vpCount = V_p.cols();
+    mRows.resize(adjacencySizes.size() + 1);
+    mLinks.resize(linkCount);
 
-    assert(nLinks_p == linkCount);
-    assert(vpCount == adjacencySizeCount);
-    
-    _rows.resize(adjacencySizes.size() + 1);
-    _links.resize(linkCount);
-
-    _rows.at(0) = _links.data();
-
-    for (uint32_t i=0; i < adjacencySizeCount; ++i)
+    mRows[0] = mLinks.data();
+    for (uint32_t i=0; i < adjacencySizes.size(); ++i)
     {
-        _rows.at(i+1) = _rows.at(i) + adjacencySizes.at(i);
-
-        const uint32_t d1 = _rows.at(i) - _links.data();
-        const uint32_t d2 = neighborhoodSize[i];
-        assert(d1 == d2);
-
-        auto p1 = _rows.at(i);
-        auto p2 = _links.data() + neighborhoodSize[i];
-        assert(p1 == p2);
-
-        assert(_rows[i] <= _links.data() + linkCount);
+        mRows[i+1] = mRows[i] + adjacencySizes[i];
     }
-    assert(_rows.at(adjacencySizeCount) == _links.data() + linkCount);
 
     tbb::parallel_for(
         tbb::blocked_range<uint32_t>(0u, (uint32_t) V_p.cols(), GRAIN_SIZE),
@@ -621,7 +587,7 @@ AdjacencyMatrix::AdjacencyMatrix(
                         scratch.push_back(Link(to_lower[link->id], link->weight));
                 }
                 std::sort(scratch.begin(), scratch.end());
-                Link *dest = _rows.at(i);
+                Link *dest = mRows[i];
                 uint32_t id = INVALID;
                 for (const auto &link : scratch) {
                     if (link.id != i) {
