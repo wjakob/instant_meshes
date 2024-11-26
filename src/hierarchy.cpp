@@ -16,13 +16,10 @@
 #include "serializer.h"
 #include "dedge.h"
 #include "field.h"
-#include <parallel_stable_sort.h>
 #include <pcg32.h>
 
 namespace InstantMeshes
 {
-
-
 
 void generate_graph_coloring_deterministic(const AdjacencyMatrix &adj, uint32_t size,
                              std::vector<std::vector<uint32_t> > &phases,
@@ -448,8 +445,8 @@ void MultiResolutionHierarchy::load(const Serializer &serializer) {
         serializer.get("adj_ivar", adj_ivar);
         serializer.get("adj_weight", adj_weight);
 
-        if (adj_id.size() != adj_ivar.size() || adj_ivar.size() != adj_weight.size())
-            throw std::runtime_error("Could not unserialize data");
+        // if (adj_id.size() != adj_ivar.size() || adj_ivar.size() != adj_weight.size())
+        //     throw std::runtime_error("Could not unserialize data");
         // uint32_t linkCount = 0;
 
         // for (uint32_t j=0; j<adj_id.size(); ++j) {

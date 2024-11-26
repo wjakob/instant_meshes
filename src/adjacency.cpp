@@ -109,7 +109,7 @@ AdjacencyMatrix::AdjacencyMatrix(
     }
 }
 
-AdjacencyMatrix AdjacencyMatrix::CreateUniform(
+AdjacencyMatrix::AdjacencyMatrix(
     const MatrixXu& F,
     const VectorXu& V2E,
     const VectorXu& E2E,
@@ -150,34 +150,19 @@ AdjacencyMatrix AdjacencyMatrix::CreateUniform(
 
     const uint32_t linkCount = std::accumulate(adjacencySizes.begin(), adjacencySizes.end(), 0);
 
-    AdjacencyMatrix adj;
-    adj._rows.resize(adjacencySizes.size() + 1);
-    adj._links.resize(linkCount);
+    _rows.resize(adjacencySizes.size() + 1);
+    _links.resize(linkCount);
 
-    adj._rows.at(0) = adj._links.data();
+    _rows.at(0) = _links.data();
 
     for (uint32_t i=0; i < adjacencySizes.size(); ++i)
     {
-        adj._rows.at(i+1) = adj._rows.at(i) + adjacencySizes.at(i);
-        assert(adj._rows[i] < adj._links.data() + linkCount);
+        _rows.at(i+1) = _rows.at(i) + adjacencySizes.at(i);
+        assert(_rows[i] < _links.data() + linkCount);
     }
-    assert(adj._rows.at(adjacencySizes.size()) == adj._links.data() + linkCount);
+    assert(_rows.at(adjacencySizes.size()) == _links.data() + linkCount);
 
-    // neighborhoodSize[0] = 0;
-    // for (uint32_t i=0; i<neighborhoodSize.size()-1; ++i)
-    //     neighborhoodSize[i+1] += neighborhoodSize[i];
-
-    // uint32_t linkCount = 0;
-    // for (uint32_t i=0; i < adjacencySizes.size(); ++i)
-    // {
-    //     linkCount += adjacencySizes[i];
-    // }
-
-    // AdjacencyMatrix adj = new Link*[V2E.size() + 1];
-    // uint32_t nLinks = neighborhoodSize[neighborhoodSize.size()-1];
-    // Link *links = new Link[nLinks];
-    // for (uint32_t i=0; i<neighborhoodSize.size(); ++i)
-    //     adj[i] = links + neighborhoodSize[i];
+    auto& adj = _rows;
 
     tbb::parallel_for(
         tbb::blocked_range<uint32_t>(0u, (uint32_t) V2E.size(), GRAIN_SIZE),
@@ -208,11 +193,9 @@ AdjacencyMatrix AdjacencyMatrix::CreateUniform(
     );
 
     if (logger) *logger << "done. (took " << timeString(timer.value()) << ")" << std::endl;
-
-    return adj;
 }
 
-AdjacencyMatrix AdjacencyMatrix::CreateCotan(
+AdjacencyMatrix::AdjacencyMatrix(
     const MatrixXu& F,
     const MatrixXf& V,
     const VectorXu& V2E,
@@ -254,28 +237,16 @@ AdjacencyMatrix AdjacencyMatrix::CreateCotan(
 
     const uint32_t linkCount = std::accumulate(adjacencySizes.begin(), adjacencySizes.end(), 0);
 
-    AdjacencyMatrix adj;
-
-    adj._rows.resize(adjacencySizes.size() + 1);
-    adj._links.resize(linkCount);
-    adj._rows[0] = adj._links.data();
+    _rows.resize(adjacencySizes.size() + 1);
+    _links.resize(linkCount);
+    _rows[0] = _links.data();
 
     for (uint32_t i=0; i < adjacencySizes.size(); ++i)
     {
-        adj._rows.at(i+1) = adj._rows.at(i) + adjacencySizes.at(i);
-        assert(adj._rows[i] < adj._links.data() + linkCount);
+        _rows.at(i+1) = _rows.at(i) + adjacencySizes.at(i);
+        assert(_rows[i] < _links.data() + linkCount);
     }
-    assert(adj._rows.at(adjacencySizes.size()) == adj._links.data() + linkCount);
-
-    // neighborhoodSize[0] = 0;
-    // for (uint32_t i=0; i<neighborhoodSize.size()-1; ++i)
-    //     neighborhoodSize[i+1] += neighborhoodSize[i];
-
-    // AdjacencyMatrix adj = new Link*[V2E.size() + 1];
-    // uint32_t nLinks = neighborhoodSize[neighborhoodSize.size()-1];
-    // Link *links = new Link[nLinks];
-    // for (uint32_t i=0; i<neighborhoodSize.size(); ++i)
-    //     adj[i] = links + neighborhoodSize[i];
+    assert(_rows.at(adjacencySizes.size()) == _links.data() + linkCount);
 
     tbb::parallel_for(
         tbb::blocked_range<uint32_t>(0u, (uint32_t)V.cols(), GRAIN_SIZE),
@@ -284,7 +255,7 @@ AdjacencyMatrix AdjacencyMatrix::CreateCotan(
                 uint32_t edge = V2E[i], stop = edge;
                 if (nonManifold[i] || edge == INVALID)
                     continue;
-                Link *ptr = adj[i];
+                Link *ptr = _rows.at(i);
 
                 int it = 0;
                 do {
@@ -350,12 +321,17 @@ AdjacencyMatrix AdjacencyMatrix::CreateCotan(
         }
     );
     if (logger) *logger << "done. (took " << timeString(timer.value()) << ")" << std::endl;
-    return adj;
 }
 
-AdjacencyMatrix AdjacencyMatrix::CreatePointCloud(
-    MatrixXf &V, MatrixXf &N, const BVH *bvh, MeshStats &stats, uint32_t knn_points,
-    bool deterministic, const ProgressCallback &progress) {
+AdjacencyMatrix::AdjacencyMatrix(
+    MatrixXf &V,
+    MatrixXf &N,
+    const BVH *bvh,
+    MeshStats &stats,
+    uint32_t knn_points,
+    bool deterministic,
+    const ProgressCallback &progress)
+{
     Timer<> timer;
     if (logger) *logger << "Generating adjacency matrix .. " << std::flush;
 
@@ -428,35 +404,24 @@ AdjacencyMatrix AdjacencyMatrix::CreatePointCloud(
 
     if (logger) *logger << "allocating " << memString(sizeof(Link) * linkCount) << " .. " << std::flush;
 
-    AdjacencyMatrix adj;
-
-    adj._rows.resize(adjacencySizes.size() + 1);
-    adj._links.resize(linkCount);
-    adj._rows[0] = adj._links.data();
+    _rows.resize(adjacencySizes.size() + 1);
+    _links.resize(linkCount);
+    _rows[0] = _links.data();
 
     for (uint32_t i=0; i < adjacencySizes.size(); ++i)
     {
         const uint32_t size = adjacencySizes[i];
         if (size == INVALID)
         {
-            adj._rows.at(i+1) = adj._rows.at(i);
+            _rows.at(i+1) = _rows.at(i);
         }
         else
         {
-            adj._rows.at(i+1) = adj._rows.at(i) + size;
+            _rows.at(i+1) = _rows.at(i) + size;
         }
-        assert(adj._rows[i] < adj._links.data() + linkCount);
+        assert(_rows[i] < _links.data() + linkCount);
     }
-    assert(adj._rows.at(adjacencySizes.size()) == adj._links.data() + linkCount);
-
-    // AdjacencyMatrix adj = new Link*[V.size() + 1];
-    // adj[0] = new Link[nLinks];
-    // for (uint32_t i=1; i<=V.cols(); ++i) {
-    //     uint32_t size = adj_size[i-1];
-    //     if (size == INVALID)
-    //         size = 0;
-    //     adj[i] = adj[i-1] + size;
-    // }
+    assert(_rows.at(adjacencySizes.size()) == _links.data() + linkCount);
 
     VectorXu adj_offset(V.cols());
     adj_offset.setZero();
@@ -473,7 +438,7 @@ AdjacencyMatrix AdjacencyMatrix::CreatePointCloud(
                     uint32_t k = adj_set_i[j];
                     if (k == INVALID)
                         break;
-                    adj[i][atomicAdd(&adj_offset.coeffRef(i), 1)-1] = Link(k);
+                    _rows[i][atomicAdd(&adj_offset.coeffRef(i), 1)-1] = Link(k);
 
                     uint32_t *adj_set_k = adj_sets + (size_t) k * (size_t) knn_points;
                     bool found = false;
@@ -483,7 +448,7 @@ AdjacencyMatrix AdjacencyMatrix::CreatePointCloud(
                         if (value == INVALID) break;
                     }
                     if (!found)
-                        adj[k][atomicAdd(&adj_offset.coeffRef(k), 1)-1] = Link(i);
+                        _rows[k][atomicAdd(&adj_offset.coeffRef(k), 1)-1] = Link(i);
                 }
             }
         }
@@ -495,10 +460,9 @@ AdjacencyMatrix AdjacencyMatrix::CreatePointCloud(
     stats.mSurfaceArea = M_PI * stats.mAverageEdgeLength*stats.mAverageEdgeLength * 0.5f * V.cols();
 
     if (logger) *logger << "done. (took " << timeString(timer.value()) << ")" << std::endl;
-    return adj;
 }
 
-AdjacencyMatrix AdjacencyMatrix::DownsampleGraph(
+AdjacencyMatrix::AdjacencyMatrix(
     const AdjacencyMatrix adj,
     const MatrixXf &V,
     const MatrixXf &N,
@@ -647,33 +611,19 @@ AdjacencyMatrix AdjacencyMatrix::DownsampleGraph(
         }
     );
 
-    
-
     const uint32_t linkCount = std::accumulate(adjacencySizes.begin(), adjacencySizes.end(), 0);
     
-    AdjacencyMatrix adj_p;
-    adj_p._rows.resize(adjacencySizes.size() + 1);
-    adj_p._links.resize(linkCount);
+    _rows.resize(adjacencySizes.size() + 1);
+    _links.resize(linkCount);
 
-    adj_p._rows.at(0) = adj_p._links.data();
+    _rows.at(0) = _links.data();
 
     for (uint32_t i=0; i < adjacencySizes.size(); ++i)
     {
-        adj_p._rows.at(i+1) = adj_p._rows.at(i) + adjacencySizes.at(i);
-        assert(adj_p._rows[i] < adj_p._links.data() + linkCount);
+        _rows.at(i+1) = _rows.at(i) + adjacencySizes.at(i);
+        assert(_rows[i] < _links.data() + linkCount);
     }
-    assert(adj_p._rows.at(adjacencySizes.size()) == adj_p._links.data() + linkCount);
-
-    // neighborhoodSize[0] = 0;
-    // for (uint32_t i=0; i<neighborhoodSize.size()-1; ++i)
-    //     neighborhoodSize[i+1] += neighborhoodSize[i];
-
-    //uint32_t nLinks_p = neighborhoodSize[neighborhoodSize.size()-1];
-
-    //AdjacencyMatrix adj_p = new Link*[V_p.size() + 1];
-    //Link *links = new Link[nLinks_p];
-    // for (uint32_t i=0; i<neighborhoodSize.size(); ++i)
-    //     adj_p[i] = links + neighborhoodSize[i];
+    assert(_rows.at(adjacencySizes.size()) == _links.data() + linkCount);
 
     tbb::parallel_for(
         tbb::blocked_range<uint32_t>(0u, (uint32_t) V_p.cols(), GRAIN_SIZE),
@@ -690,7 +640,7 @@ AdjacencyMatrix AdjacencyMatrix::DownsampleGraph(
                         scratch.push_back(Link(to_lower[link->id], link->weight));
                 }
                 std::sort(scratch.begin(), scratch.end());
-                Link *dest = adj_p[i];
+                Link *dest = _rows.at(i);
                 uint32_t id = INVALID;
                 for (const auto &link : scratch) {
                     if (link.id != i) {
@@ -708,7 +658,6 @@ AdjacencyMatrix AdjacencyMatrix::DownsampleGraph(
     );
     if (logger) *logger << "done. (" << V.cols() << " -> " << V_p.cols() << " vertices, took "
          << timeString(timer.value()) << ")" << std::endl;
-    return adj_p;
 }
 
 }

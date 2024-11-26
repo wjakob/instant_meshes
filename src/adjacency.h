@@ -67,15 +67,14 @@ public:
         const std::vector<std::vector<uint32_t>>& adj_ivar,
         const std::vector<std::vector<Float>>& adj_weight);
 
-
-    static AdjacencyMatrix CreateUniform(
+    AdjacencyMatrix(
         const MatrixXu &F,
         const VectorXu &V2E,
         const VectorXu &E2E,
         const VectorXb &nonManifold,
         const ProgressCallback &progress = ProgressCallback());
 
-    static AdjacencyMatrix CreateCotan(
+    AdjacencyMatrix(
         const MatrixXu &F,
         const MatrixXf &V,
         const VectorXu &V2E,
@@ -83,7 +82,7 @@ public:
         const VectorXb &nonManifold,
         const ProgressCallback &progress = ProgressCallback());
 
-    static AdjacencyMatrix CreatePointCloud(
+    AdjacencyMatrix(
         MatrixXf &V,
         MatrixXf &N,
         const BVH *bvh,
@@ -92,7 +91,7 @@ public:
         bool deterministic = false,
         const ProgressCallback &progress = ProgressCallback());
 
-    static AdjacencyMatrix DownsampleGraph(
+    AdjacencyMatrix(
         const AdjacencyMatrix adj,
         const MatrixXf &V,
         const MatrixXf &N,
