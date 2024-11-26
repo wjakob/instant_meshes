@@ -58,7 +58,7 @@ void batch_process(const std::string &input, const std::string &output,
     VectorXf A;
     std::set<uint32_t> crease_in, crease_out;
     BVH *bvh = nullptr;
-    AdjacencyMatrix adj = nullptr;
+    AdjacencyMatrix adj;
 
     /* Load the input mesh */
     load_mesh_or_pointcloud(input, F, V, N);
@@ -71,7 +71,7 @@ void batch_process(const std::string &input, const std::string &output,
     if (pointcloud) {
         bvh = new BVH(&F, &V, &N, stats.mAABB);
         bvh->build();
-        adj = generate_adjacency_matrix_pointcloud(V, N, bvh, stats, knn_points, deterministic);
+        adj = AdjacencyMatrix::CreatePointCloud(V, N, bvh, stats, knn_points, deterministic);
         A.resize(V.cols());
         A.setConstant(1.0f);
     }
@@ -123,7 +123,8 @@ void batch_process(const std::string &input, const std::string &output,
         build_dedge(F, V, V2E, E2E, boundary, nonManifold);
 
         /* Compute adjacency matrix */
-        adj = generate_adjacency_matrix_uniform(F, V2E, E2E, nonManifold);
+        adj = AdjacencyMatrix::CreateUniform(F, V2E, E2E, nonManifold);
+        //adj = generate_adjacency_matrix_uniform(F, V2E, E2E, nonManifold);
 
         /* Compute vertex/crease normals */
         if (creaseAngle >= 0)
