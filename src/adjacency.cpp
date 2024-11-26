@@ -26,6 +26,7 @@
 namespace InstantMeshes
 {
 
+// Load
 AdjacencyMatrix::AdjacencyMatrix(
     const std::vector<std::vector<uint32_t>>& adj_id,
     const std::vector<std::vector<uint32_t>>& adj_ivar,
@@ -62,6 +63,7 @@ AdjacencyMatrix::AdjacencyMatrix(
     }
 }
 
+// Uniform
 AdjacencyMatrix::AdjacencyMatrix(
     const MatrixXu& F,
     const VectorXu& V2E,
@@ -148,6 +150,7 @@ AdjacencyMatrix::AdjacencyMatrix(
     if (logger) *logger << "done. (took " << timeString(timer.value()) << ")" << std::endl;
 }
 
+// Cotangent Laplacian
 AdjacencyMatrix::AdjacencyMatrix(
     const MatrixXu& F,
     const MatrixXf& V,
@@ -276,6 +279,7 @@ AdjacencyMatrix::AdjacencyMatrix(
     if (logger) *logger << "done. (took " << timeString(timer.value()) << ")" << std::endl;
 }
 
+// Point cloud
 AdjacencyMatrix::AdjacencyMatrix(
     MatrixXf &V,
     MatrixXf &N,
@@ -417,15 +421,15 @@ AdjacencyMatrix::AdjacencyMatrix(
 }
 
 AdjacencyMatrix::AdjacencyMatrix(
-    const AdjacencyMatrix adj,
+    const AdjacencyMatrix& adj,
     const MatrixXf &V,
     const MatrixXf &N,
     const VectorXf &A,
-    MatrixXf &V_p,
-    MatrixXf &N_p,
-    VectorXf &A_p,
-    MatrixXu &to_upper,
-    VectorXu &to_lower,
+    MatrixXf& V_p,
+    MatrixXf& N_p,
+    VectorXf& A_p,
+    MatrixXu& to_upper,
+    VectorXu& to_lower,
     bool deterministic,
     const ProgressCallback &progress)
 {

@@ -70,7 +70,6 @@ void batch_process(const std::string &input, const std::string &output,
 
     if (pointcloud) {
         bvh = BVH(&F, &V, &N, stats.mAABB);
-        //bvh.build();
         adj = AdjacencyMatrix(V, N, bvh, stats, knn_points, deterministic);
         A.resize(V.cols());
         A.setConstant(1.0f);

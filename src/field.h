@@ -160,6 +160,8 @@ class Serializer;
 class Optimizer {
 public:
     Optimizer(MultiResolutionHierarchy &mRes, bool interactive = false, int concurrency = -1);
+    ~Optimizer() { if (mThread.joinable()) shutdown(); }
+    
     void save(Serializer &state);
     void load(const Serializer &state);
 

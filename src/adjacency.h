@@ -60,8 +60,7 @@ class AdjacencyMatrix
 {
 public:
     AdjacencyMatrix(){}
-    // AdjacencyMatrix(const VectorXu& neighborhoodSize);
-    // AdjacencyMatrix(const std::vector<uint32_t>& neighborhoodSize);
+
     AdjacencyMatrix(
         const std::vector<std::vector<uint32_t>>& adj_id,
         const std::vector<std::vector<uint32_t>>& adj_ivar,
@@ -92,17 +91,29 @@ public:
         const ProgressCallback &progress = ProgressCallback());
 
     AdjacencyMatrix(
-        const AdjacencyMatrix adj,
-        const MatrixXf &V,
-        const MatrixXf &N,
-        const VectorXf &areas,
-        MatrixXf &V_p,
-        MatrixXf &V_n,
-        VectorXf &areas_p,
-        MatrixXu &to_upper,
-        VectorXu &to_lower,
+        const AdjacencyMatrix& adj,
+        const MatrixXf& V,
+        const MatrixXf& N,
+        const VectorXf& areas,
+        MatrixXf& V_p,
+        MatrixXf& V_n,
+        VectorXf& areas_p,
+        MatrixXu& to_upper,
+        VectorXu& to_lower,
         bool deterministic = false,
         const ProgressCallback& progress = ProgressCallback());
+
+    AdjacencyMatrix(AdjacencyMatrix&& other) : _links(std::move(other._links)), _rows(std::move(other._rows)) {}
+
+    AdjacencyMatrix& operator=(AdjacencyMatrix&& other)
+    {
+        _links = std::move(other._links);
+        _rows = std::move(other._rows);
+        return *this;
+    }
+
+    AdjacencyMatrix(const AdjacencyMatrix& other) = delete;
+    AdjacencyMatrix& operator=(const AdjacencyMatrix& other) = delete;
 
     Link*& operator[] (size_t index) { return _rows.at(index); }
     Link* operator[] (size_t index) const { return _rows.at(index); }
