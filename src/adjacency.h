@@ -115,13 +115,12 @@ public:
     AdjacencyMatrix(const AdjacencyMatrix& other) = delete;
     AdjacencyMatrix& operator=(const AdjacencyMatrix& other) = delete;
 
-    //Link*& operator[] (size_t index) { return mRows[index]; }
     Link* operator[] (size_t index) const { return mRows[index]; }
 
     const std::vector<Link>& Links() const { return mLinks; }
     const std::vector<Link*>& Rows() const { return mRows; }
 
-public:
+private:
     std::vector<Link> mLinks;
     std::vector<Link*> mRows;
 };

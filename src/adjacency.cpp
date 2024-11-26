@@ -71,7 +71,6 @@ AdjacencyMatrix::AdjacencyMatrix(
     const VectorXb& nonManifold,
     const ProgressCallback& progress)
 {
-    //VectorXu neighborhoodSize(V2E.size() + 1);
     std::vector<uint32_t> adjacencySizes(V2E.size());
     if (logger) *logger << "Generating adjacency matrix .. " << std::flush;
     Timer<> timer;
@@ -82,7 +81,6 @@ AdjacencyMatrix::AdjacencyMatrix(
             for (uint32_t i = range.begin(); i != range.end(); ++i) {
                 uint32_t edge = V2E[i], stop = edge;
                 if (nonManifold[i] || edge == INVALID) {
-                    //neighborhoodSize[i+1] = 0;
                     adjacencySizes[i] = 0;
                     continue;
                 }
@@ -96,7 +94,6 @@ AdjacencyMatrix::AdjacencyMatrix(
                     edge = dedge_next_3(opp);
                     nNeighbors++;
                 } while (edge != stop);
-                //neighborhoodSize[i+1] = nNeighbors;
                 adjacencySizes[i] = nNeighbors;
             }
             SHOW_PROGRESS_RANGE(range, V2E.size(), "Generating adjacency matrix (1/2)");
@@ -114,8 +111,6 @@ AdjacencyMatrix::AdjacencyMatrix(
         mRows[i+1] = mRows[i] + adjacencySizes[i];
     }
 
-    auto& adj = mRows;
-
     tbb::parallel_for(
         tbb::blocked_range<uint32_t>(0u, (uint32_t) V2E.size(), GRAIN_SIZE),
         [&](const tbb::blocked_range<uint32_t> &range) {
@@ -123,7 +118,7 @@ AdjacencyMatrix::AdjacencyMatrix(
                 uint32_t edge = V2E[i], stop = edge;
                 if (nonManifold[i] || edge == INVALID)
                     continue;
-                Link *ptr = adj[i];
+                Link *ptr = mRows[i];
 
                 int it = 0;
                 do {
@@ -156,7 +151,6 @@ AdjacencyMatrix::AdjacencyMatrix(
     const VectorXb& nonManifold,
     const ProgressCallback& progress)
 {
-    //VectorXu neighborhoodSize(V2E.size() + 1);
     std::vector<uint32_t> adjacencySizes(V2E.size());
     if (logger) *logger << "Computing cotangent Laplacian .. " << std::flush;
     Timer<> timer;
@@ -167,7 +161,6 @@ AdjacencyMatrix::AdjacencyMatrix(
             for (uint32_t i = range.begin(); i != range.end(); ++i) {
                 uint32_t edge = V2E[i], stop = edge;
                 if (nonManifold[i] || edge == INVALID) {
-                    //neighborhoodSize[i+1] = 0;
                     adjacencySizes[i] = 0;
                     continue;
                 }
@@ -181,7 +174,6 @@ AdjacencyMatrix::AdjacencyMatrix(
                     edge = dedge_next_3(opp);
                     nNeighbors++;
                 } while (edge != stop);
-                //neighborhoodSize[i+1] = nNeighbors;
                 adjacencySizes[i] = nNeighbors;
             }
             SHOW_PROGRESS_RANGE(range, V2E.size(), "Computing cotangent Laplacian (1/2)");
@@ -528,7 +520,6 @@ AdjacencyMatrix::AdjacencyMatrix(
     else
         tbb::parallel_for(range, copy_uncollapsed);
 
-    VectorXu neighborhoodSize(V_p.cols() + 1);
     std::vector<uint32_t> adjacencySizes(V_p.cols());
 
     tbb::parallel_for(
@@ -554,7 +545,6 @@ AdjacencyMatrix::AdjacencyMatrix(
                         ++size;
                     }
                 }
-                neighborhoodSize[i+1] = size;
                 adjacencySizes[i] = size;
             }
             SHOW_PROGRESS_RANGE(range, V_p.cols(), "Downsampling graph (5/6)");
