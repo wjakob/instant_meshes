@@ -21,13 +21,6 @@ namespace InstantMeshes
 
 class Serializer;
 
-extern AdjacencyMatrix
-downsample_graph(const AdjacencyMatrix adj, const MatrixXf &V,
-                 const MatrixXf &N, const VectorXf &areas, MatrixXf &V_p,
-                 MatrixXf &V_n, VectorXf &areas_p, MatrixXu &to_upper,
-                 VectorXu &to_lower, bool deterministic = false,
-                 const ProgressCallback &progress = ProgressCallback());
-
 struct MultiResolutionHierarchy {
     enum { MAX_DEPTH = 25 };
 public:

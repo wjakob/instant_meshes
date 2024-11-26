@@ -85,7 +85,7 @@ public:
     AdjacencyMatrix(
         MatrixXf &V,
         MatrixXf &N,
-        const BVH *bvh,
+        const BVH& bvh,
         MeshStats &stats,
         uint32_t knn_points,
         bool deterministic = false,
@@ -107,7 +107,7 @@ public:
     Link*& operator[] (size_t index) { return _rows.at(index); }
     Link* operator[] (size_t index) const { return _rows.at(index); }
 
-private:
+public:
     std::vector<Link> _links;
     std::vector<Link*> _rows;
 };

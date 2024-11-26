@@ -28,6 +28,7 @@ set(LIBRARY_NAME InstantMeshes)
 # Add the library.
 add_library(${LIBRARY_NAME} ${LIBRARY_TYPE}
     ${CMAKE_CURRENT_SOURCE_DIR}/src/adjacency.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/adjacencyRef.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/batch.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bvh.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cleanup.cpp
@@ -119,6 +120,7 @@ install(EXPORT ${LIBRARY_NAME}Targets
 install(FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/aabb.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/adjacency.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/adjacencyRef.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/batch.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bvh.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/cleanup.h

@@ -57,7 +57,7 @@ void batch_process(const std::string &input, const std::string &output,
     MatrixXf V, N;
     VectorXf A;
     std::set<uint32_t> crease_in, crease_out;
-    BVH *bvh = nullptr;
+    BVH bvh;
     AdjacencyMatrix adj;
 
     /* Load the input mesh */
@@ -69,8 +69,8 @@ void batch_process(const std::string &input, const std::string &output,
     MeshStats stats = compute_mesh_stats(F, V, deterministic);
 
     if (pointcloud) {
-        bvh = new BVH(&F, &V, &N, stats.mAABB);
-        bvh->build();
+        bvh = BVH(&F, &V, &N, stats.mAABB);
+        //bvh.build();
         adj = AdjacencyMatrix(V, N, bvh, stats, knn_points, deterministic);
         A.resize(V.cols());
         A.setConstant(1.0f);
@@ -169,11 +169,11 @@ void batch_process(const std::string &input, const std::string &output,
         mRes.propagateConstraints(rosy, posy);
     }
 
-    if (bvh) {
-        bvh->setData(&mRes.F(), &mRes.V(), &mRes.N());
+    if (bvh.valid()) {
+        bvh.setData(&mRes.F(), &mRes.V(), &mRes.N());
     } else if (smooth_iter > 0) {
-        bvh = new BVH(&mRes.F(), &mRes.V(), &mRes.N(), stats.mAABB);
-        bvh->build();
+        bvh = BVH(&mRes.F(), &mRes.V(), &mRes.N(), stats.mAABB);
+        //bvh->build();
     }
 
     if (logger) *logger << "Preprocessing is done. (total time excluding file I/O: "
@@ -219,8 +219,6 @@ void batch_process(const std::string &input, const std::string &output,
     if (logger) *logger << "Extraction is done. (total time: " << timeString(timer.reset()) << ")" << std::endl;
 
     write_mesh(output, F_extr, O_extr, MatrixXf(), Nf_extr);
-    if (bvh)
-        delete bvh;
 }
 
 }

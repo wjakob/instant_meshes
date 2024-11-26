@@ -16,7 +16,6 @@
 #include "dset.h"
 #include "dedge.h"
 #include "reorder.h"
-#include "bvh.h"
 #include "cleanup.h"
 #include <tbb/concurrent_vector.h>
 #include <parallel_stable_sort.h>
@@ -520,7 +519,7 @@ extract_graph(const MultiResolutionHierarchy &mRes, bool extrinsic, int rosy, in
 void extract_faces(std::vector<std::vector<TaggedLink> > &adj, MatrixXf &O,
                    MatrixXf &N, MatrixXf &Nf, MatrixXu &F, int posy,
                    Float scale, std::set<uint32_t> &crease, bool fill_holes,
-                   bool pure_quad, BVH *bvh, int smooth_iterations) {
+                   bool pure_quad, const BVH& bvh, int smooth_iterations) {
 
     uint32_t nF = 0, nV = O.cols(), nV_old = O.cols();
     F.resize(posy, posy == 4 ? O.cols() : O.cols()*2);
@@ -909,6 +908,8 @@ void extract_faces(std::vector<std::vector<TaggedLink> > &adj, MatrixXf &O,
             }
         );
 
+        const bool hasBVH = bvh.valid() && (bvh.F()->size() > 0);
+
         for (int it=0; it<smooth_iterations; ++it) {
             MatrixXf O_prime(O.rows(), O.cols());
             MatrixXf N_prime(O.rows(), O.cols());
@@ -934,13 +935,13 @@ void extract_faces(std::vector<std::vector<TaggedLink> > &adj, MatrixXf &O,
                             Vector3f n = cov.jacobiSvd(Eigen::ComputeFullU).matrixU().col(2).normalized();
                             n *= signum(avgNormal.dot(n));
 
-                            if (bvh && bvh->F()->size() > 0) {
+                            if (hasBVH) {
                                 Ray ray1(centroid,  n, 0, scale / 2);
                                 Ray ray2(centroid, -n, 0, scale / 2);
                                 uint32_t idx1 = 0, idx2 = 0;
                                 Float t1 = 0, t2 = 0;
-                                bvh->rayIntersect(ray1, idx1, t1);
-                                bvh->rayIntersect(ray2, idx2, t2);
+                                bvh.rayIntersect(ray1, idx1, t1);
+                                bvh.rayIntersect(ray2, idx2, t2);
                                 if (std::min(t1, t2) < scale*0.5f)
                                     centroid = t1 < t2 ? ray1(t1) : ray2(t2);
                             }

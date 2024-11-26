@@ -248,7 +248,7 @@ void MultiResolutionHierarchy::build(bool deterministic, const ProgressCallback 
         VectorXu toLower;
 
         AdjacencyMatrix adj_p =
-            downsample_graph(mAdj[i], mV[i], mN[i], mA[i], V_p, N_p, A_p,
+            AdjacencyMatrix(mAdj[i], mV[i], mN[i], mA[i], V_p, N_p, A_p,
                              toUpper, toLower, deterministic, progress);
 
         if (deterministic)
@@ -445,27 +445,6 @@ void MultiResolutionHierarchy::load(const Serializer &serializer) {
         serializer.get("adj_ivar", adj_ivar);
         serializer.get("adj_weight", adj_weight);
 
-        // if (adj_id.size() != adj_ivar.size() || adj_ivar.size() != adj_weight.size())
-        //     throw std::runtime_error("Could not unserialize data");
-        // uint32_t linkCount = 0;
-
-        // for (uint32_t j=0; j<adj_id.size(); ++j) {
-        //     if (adj_id[j].size() != adj_ivar[j].size() || adj_ivar[j].size() != adj_weight[j].size())
-        //         throw std::runtime_error("Could not unserialize data");
-        //     linkCount += adj_id[j].size();
-        // }
-
-        // AdjacencyMatrix adj = new Link*[adj_id.size() + 1];
-        // adj[0] = new Link[linkCount];
-        // for (uint32_t j=0; j<adj_id.size(); ++j)
-        //     adj[j+1] = adj[j] + adj_id[j].size();
-        // for (uint32_t j=0; j<adj_id.size(); ++j) {
-        //     for (uint32_t k=0; k<adj_id[j].size(); ++k) {
-        //         adj[j][k].id = adj_id[j][k];
-        //         adj[j][k].ivar_uint32 = adj_ivar[j][k];
-        //         adj[j][k].weight = adj_weight[j][k];
-        //     }
-        // }
         mAdj.emplace_back(AdjacencyMatrix(adj_id, adj_ivar, adj_weight));
         serializer.popPrefix();
     }

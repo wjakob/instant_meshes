@@ -14,6 +14,7 @@
 #pragma once
 
 #include "hierarchy.h"
+#include "bvh.h"
 #include <set>
 
 namespace InstantMeshes
@@ -26,8 +27,6 @@ struct TaggedLink {
     bool used() const { return flag & 1; }
     void markUsed() { flag |= 1; }
 };
-
-class BVH;
 
 extern void
 extract_graph(const MultiResolutionHierarchy &mRes, bool extrinsic, int rosy, int posy,
@@ -43,5 +42,5 @@ extern void extract_faces(std::vector<std::vector<TaggedLink> > &adj,
                           MatrixXf &O, MatrixXf &N, MatrixXf &Nf, MatrixXu &F,
                           int posy, Float scale, std::set<uint32_t> &crease,
                           bool fill_holes = true, bool pure_quad = true,
-                          BVH *bvh = nullptr, int smooth_iterations = 2);
+                          const BVH& bvh = BVH(), int smooth_iterations = 2);
 }

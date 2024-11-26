@@ -40,7 +40,7 @@ struct BVHBuildTask : public tbb::task {
         BVHNode &node = bvh.mNodes[node_idx];
 
         if (size < SERIAL_THRESHOLD) {
-            tbb::blocked_range<uint32_t> range(start-bvh.mIndices, end-bvh.mIndices);
+            tbb::blocked_range<uint32_t> range(start-bvh.mIndices.data(), end-bvh.mIndices.data());
             const ProgressCallback &progress = bvh.mProgress;
             SHOW_PROGRESS_RANGE(range, total_size, "Constructing Bounding Volume Hierarchy");
             execute_serially(bvh, node_idx, start, end, temp);
@@ -250,7 +250,7 @@ struct BVHBuildTask : public tbb::task {
         if (best_index == -1) {
             /* Splitting does not reduce the cost, make a leaf */
             node.leaf.flag = 1;
-            node.leaf.start = start - bvh.mIndices;
+            node.leaf.start = start - bvh.mIndices.data();
             node.leaf.size  = size;
             return;
         }
@@ -279,19 +279,24 @@ struct BVHBuildTask : public tbb::task {
     }
 };
 
+BVH::BVH()
+: mF(nullptr), mV(nullptr), mN(nullptr), mDiskRadius(0.f) {}
+
 BVH::BVH(const MatrixXu *F, const MatrixXf *V, const MatrixXf *N, const AABB &aabb)
-: mIndices(nullptr), mF(F), mV(V), mN(N), mDiskRadius(0.f) {
+: mF(F), mV(V), mN(N), mDiskRadius(0.f) {
     if (mF->size() > 0) {
         mNodes.resize(2*mF->cols());
         memset(mNodes.data(), 0, sizeof(BVHNode) * mNodes.size());
         mNodes[0].aabb = aabb;
-        mIndices = new uint32_t[mF->cols()];
+        mIndices.resize(mF->cols());
     } else if (mV->size() > 0) {
         mNodes.resize(2*mV->cols());
         memset(mNodes.data(), 0, sizeof(BVHNode) * mNodes.size());
         mNodes[0].aabb = aabb;
-        mIndices = new uint32_t[mV->cols()];
+        mIndices.resize(mV->cols());
     }
+
+    build();
 }
 
 void BVH::build(const ProgressCallback &progress) {
@@ -313,11 +318,10 @@ void BVH::build(const ProgressCallback &progress) {
         mIndices[i] = i;
 
     Timer<> timer;
-    uint32_t *temp = new uint32_t[total_size];
+    std::vector<uint32_t> temp(total_size);
     BVHBuildTask& task = *new(tbb::task::allocate_root())
-        BVHBuildTask(*this, 0u, mIndices, mIndices + total_size, temp);
+        BVHBuildTask(*this, 0u, mIndices.data(), mIndices.data() + total_size, temp.data());
     tbb::task::spawn_root_and_wait(task);
-    delete[] temp;
 
     std::pair<Float, uint32_t> stats = statistics();
     if (logger) *logger << "done. ("
@@ -869,10 +873,6 @@ std::pair<Float, uint32_t> BVH::statistics(uint32_t node_idx) const {
             stats_left.second + stats_right.second + 1u
         );
     }
-}
-
-BVH::~BVH() {
-    delete[] mIndices;
 }
 
 void BVH::refitBoundingBoxes(uint32_t node_idx) {

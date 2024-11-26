@@ -26,53 +26,6 @@
 namespace InstantMeshes
 {
 
-// AdjacencyMatrix::AdjacencyMatrix(const VectorXu& neighborhoodSize)
-// {
-//     _rows.resize(neighborhoodSize.size());
-//     auto adj = _rows.data();
-//     //AdjacencyMatrix adj = new Link*[V2E.size() + 1];
-//     uint32_t nLinks = neighborhoodSize[neighborhoodSize.size()-1];
-//     _links.resize(nLinks);
-//    //Link *links = new Link[nLinks];
-//     for (uint32_t i=0; i<neighborhoodSize.size(); ++i)
-//     {
-//         assert(neighborhoodSize[i] < nLinks);
-//         _rows.at(i) = _links.data() + neighborhoodSize[i];
-//     }
-// }
-
-// AdjacencyMatrix::AdjacencyMatrix(const std::vector<uint32_t>& adjacencySizes)
-// {
-//     uint32_t linkCount = 0;
-//     for (uint32_t i=0; i < adjacencySizes.size(); ++i)
-//     {
-//         const uint32_t size = adjacencySizes[i];
-//         if (size != INVALID)
-//         {
-//             linkCount += size;
-//         }
-//     }
-
-//     _rows.resize(adjacencySizes.size() + 1);
-//     _links.resize(linkCount);
-//     _rows[0] = _links.data();
-
-//     for (uint32_t i=0; i < adjacencySizes.size(); ++i)
-//     {
-//         const uint32_t size = adjacencySizes[i];
-//         //assert(size != INVALID);
-//         if (size == INVALID)
-//         {
-//             _rows.at(i+1) = _rows.at(i);
-//         }
-//         else
-//         {
-//             _rows.at(i+1) = _rows.at(i) + size;
-//         }
-//         assert(_rows[i] < _links.data() + linkCount);
-//     }
-// }
-
 AdjacencyMatrix::AdjacencyMatrix(
     const std::vector<std::vector<uint32_t>>& adj_id,
     const std::vector<std::vector<uint32_t>>& adj_ivar,
@@ -326,7 +279,7 @@ AdjacencyMatrix::AdjacencyMatrix(
 AdjacencyMatrix::AdjacencyMatrix(
     MatrixXf &V,
     MatrixXf &N,
-    const BVH *bvh,
+    const BVH& bvh,
     MeshStats &stats,
     uint32_t knn_points,
     bool deterministic,
@@ -335,10 +288,11 @@ AdjacencyMatrix::AdjacencyMatrix(
     Timer<> timer;
     if (logger) *logger << "Generating adjacency matrix .. " << std::flush;
 
-    stats.mAverageEdgeLength = bvh->diskRadius();
-    const Float maxQueryRadius = bvh->diskRadius() * 3;
+    stats.mAverageEdgeLength = bvh.diskRadius();
+    const Float maxQueryRadius = bvh.diskRadius() * 3;
 
-    uint32_t *adj_sets = new uint32_t[V.cols() * (size_t) knn_points];
+    std::vector<uint32_t> adjacencySets(V.cols() * knn_points);
+    auto adj_sets = adjacencySets.data();
 
     DisjointSets dset(V.cols());
     std::vector<uint32_t> adjacencySizes(V.cols());
@@ -351,7 +305,7 @@ AdjacencyMatrix::AdjacencyMatrix(
                 uint32_t *adj_set = adj_sets + (size_t) i * (size_t) knn_points;
                 memset(adj_set, 0xFF, sizeof(uint32_t) * knn_points);
                 Float radius = maxQueryRadius;
-                bvh->findKNearest(V.col(i), N.col(i), knn_points, radius, result);
+                bvh.findKNearest(V.col(i), N.col(i), knn_points, radius, result);
                 uint32_t ctr = 0;
                 for (auto k : result) {
                     if (k.second == i)
@@ -419,7 +373,7 @@ AdjacencyMatrix::AdjacencyMatrix(
         {
             _rows.at(i+1) = _rows.at(i) + size;
         }
-        assert(_rows[i] < _links.data() + linkCount);
+        assert(_rows[i] <= _links.data() + linkCount);
     }
     assert(_rows.at(adjacencySizes.size()) == _links.data() + linkCount);
 
@@ -484,7 +438,8 @@ AdjacencyMatrix::AdjacencyMatrix(
     };
 
     uint32_t nLinks = adj[V.cols()] - adj[0];
-    Entry *entries = new Entry[nLinks];
+    std::vector<Entry> entryBuffer(nLinks);
+    Entry* entries = entryBuffer.data();
     Timer<> timer;
     if (logger) *logger << "  Collapsing .. " << std::flush;
 
@@ -554,8 +509,6 @@ AdjacencyMatrix::AdjacencyMatrix(
         }
     );
 
-    delete[] entries;
-
     std::atomic<int> offset(nCollapsed);
     tbb::blocked_range<uint32_t> range(0u, (uint32_t) V.cols(), GRAIN_SIZE);
 
@@ -578,7 +531,7 @@ AdjacencyMatrix::AdjacencyMatrix(
     else
         tbb::parallel_for(range, copy_uncollapsed);
 
-    //VectorXu neighborhoodSize(V_p.cols() + 1);
+    VectorXu neighborhoodSize(V_p.cols() + 1);
     std::vector<uint32_t> adjacencySizes(V_p.cols());
 
     tbb::parallel_for(
@@ -604,26 +557,50 @@ AdjacencyMatrix::AdjacencyMatrix(
                         ++size;
                     }
                 }
-                // neighborhoodSize[i+1] = size;
+                neighborhoodSize[i+1] = size;
                 adjacencySizes.at(i) = size;
             }
             SHOW_PROGRESS_RANGE(range, V_p.cols(), "Downsampling graph (5/6)");
         }
     );
 
+#if 1
+
+    neighborhoodSize[0] = 0;
+    for (uint32_t i=0; i<neighborhoodSize.size()-1; ++i)
+        neighborhoodSize[i+1] += neighborhoodSize[i];
+
+    uint32_t nLinks_p = neighborhoodSize[neighborhoodSize.size()-1];
+
+#endif
     const uint32_t linkCount = std::accumulate(adjacencySizes.begin(), adjacencySizes.end(), 0);
+
+    const size_t adjacencySizeCount = adjacencySizes.size();
+    const size_t vpCount = V_p.cols();
+
+    assert(nLinks_p == linkCount);
+    assert(vpCount == adjacencySizeCount);
     
     _rows.resize(adjacencySizes.size() + 1);
     _links.resize(linkCount);
 
     _rows.at(0) = _links.data();
 
-    for (uint32_t i=0; i < adjacencySizes.size(); ++i)
+    for (uint32_t i=0; i < adjacencySizeCount; ++i)
     {
         _rows.at(i+1) = _rows.at(i) + adjacencySizes.at(i);
-        assert(_rows[i] < _links.data() + linkCount);
+
+        const uint32_t d1 = _rows.at(i) - _links.data();
+        const uint32_t d2 = neighborhoodSize[i];
+        assert(d1 == d2);
+
+        auto p1 = _rows.at(i);
+        auto p2 = _links.data() + neighborhoodSize[i];
+        assert(p1 == p2);
+
+        assert(_rows[i] <= _links.data() + linkCount);
     }
-    assert(_rows.at(adjacencySizes.size()) == _links.data() + linkCount);
+    assert(_rows.at(adjacencySizeCount) == _links.data() + linkCount);
 
     tbb::parallel_for(
         tbb::blocked_range<uint32_t>(0u, (uint32_t) V_p.cols(), GRAIN_SIZE),

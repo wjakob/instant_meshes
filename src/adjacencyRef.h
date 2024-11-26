@@ -39,8 +39,8 @@ inline Link &search_adjacency(AdjacencyMatrixRef &adj, uint32_t i, uint32_t j) {
     throw std::runtime_error("search_adjacency: failure!");
 }
 
-class BVH;
-struct MeshStats;
+// class BVH;
+// struct MeshStats;
 
 extern AdjacencyMatrixRef generate_adjacency_matrix_pointcloud(
     MatrixXf &V, MatrixXf &N, const BVH *bvh, MeshStats &stats,

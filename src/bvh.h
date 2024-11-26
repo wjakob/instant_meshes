@@ -60,9 +60,10 @@ class BVH {
     /* Cost values for BVH surface area heuristic */
     enum { T_aabb = 1, T_tri = 1 };
 public:
+    BVH(); 
     BVH(const MatrixXu *F, const MatrixXf *V, const MatrixXf *N, const AABB &aabb);
 
-    ~BVH();
+    ~BVH(){}
 
     void setData(const MatrixXu *F, const MatrixXf *V, const MatrixXf *N) { mF = F; mV = V; mN = N; }
 
@@ -70,8 +71,6 @@ public:
     const MatrixXf *V() const { return mV; }
     const MatrixXf *N() const { return mN; }
     Float diskRadius() const { return mDiskRadius; }
-
-    void build(const ProgressCallback &progress = ProgressCallback());
 
     void printStatistics(std::ostream& out) const;
 
@@ -95,19 +94,23 @@ public:
                       Float angleThresh = 30,
                       bool includeSelf = false) const;
 
+    bool valid() const { return mF && mV && mN; }
+
 protected:
+    void build(const ProgressCallback &progress = ProgressCallback());
     bool rayIntersectTri(const Ray &ray, uint32_t i, Float &t, Vector2f &uv) const;
     bool rayIntersectDisk(const Ray &ray, uint32_t i, Float &t) const;
     void refitBoundingBoxes(uint32_t node_idx = 0);
     std::pair<Float, uint32_t> statistics(uint32_t node_idx = 0) const;
+    
 
 protected:
-    std::vector<BVHNode> mNodes;
-    uint32_t *mIndices;
     const MatrixXu *mF;
     const MatrixXf *mV, *mN;
-    ProgressCallback mProgress;
     Float mDiskRadius;
+    std::vector<BVHNode> mNodes;
+    std::vector<uint32_t> mIndices;
+    ProgressCallback mProgress;
 };
 
 }
