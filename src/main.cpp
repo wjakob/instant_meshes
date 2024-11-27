@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
         #endif
 
         {
-            nanogui::ref<Viewer> viewer = new Viewer(fullscreen, deterministic);
+            nanogui::ref<Viewer> viewer = new Viewer(fullscreen, deterministic, nprocs);
             viewer->setVisible(true);
 
             if (args.size() == 1) {
