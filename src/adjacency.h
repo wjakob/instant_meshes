@@ -16,6 +16,7 @@
 #pragma once
 
 #include "common.h"
+#include <cstdint>
 
 /* Stores integer jumps between nodes of the adjacency matrix */
 struct IntegerVariable {
@@ -47,19 +48,91 @@ struct Link {
     inline Link(uint32_t id, float weight) : id(id), weight(weight), ivar_uint32(0u) { }
 
     inline bool operator<(const Link &link) const { return id < link.id; }
-} ;
+};
 
-typedef Link** AdjacencyMatrix;
+class BVH;
+struct MeshStats;
 
-extern AdjacencyMatrix generate_adjacency_matrix_uniform(
-    const MatrixXu &F, const VectorXu &V2E,
-    const VectorXu &E2E, const VectorXb &nonManifold,
-    const ProgressCallback &progress = ProgressCallback());
+class AdjacencyMatrix
+{
+public:
+    /* Default constructor. */
+    AdjacencyMatrix(){}
 
-extern AdjacencyMatrix generate_adjacency_matrix_cotan(
-    const MatrixXu &F, const MatrixXf &V, const VectorXu &V2E,
-    const VectorXu &E2E, const VectorXb &nonManifold,
-    const ProgressCallback &progress = ProgressCallback());
+    /* Create adjancency matrix from loaded serialized data. */
+    AdjacencyMatrix(
+        const std::vector<std::vector<uint32_t>>& adj_id,
+        const std::vector<std::vector<uint32_t>>& adj_ivar,
+        const std::vector<std::vector<Float>>& adj_weight);
+
+    /* Create adjancency matrix from a mesh. */
+    AdjacencyMatrix(
+        const MatrixXu &F,
+        const VectorXu &V2E,
+        const VectorXu &E2E,
+        const VectorXb &nonManifold,
+        const ProgressCallback &progress = ProgressCallback());
+
+    /* Create adjancency matrix from a mesh using cotangent laplacian. */
+    AdjacencyMatrix(
+        const MatrixXu &F,
+        const MatrixXf &V,
+        const VectorXu &V2E,
+        const VectorXu &E2E,
+        const VectorXb &nonManifold,
+        const ProgressCallback &progress = ProgressCallback());
+
+    /* Create adjancency matrix from a point cloud. */
+    AdjacencyMatrix(
+        MatrixXf &V,
+        MatrixXf &N,
+        const BVH& bvh,
+        MeshStats &stats,
+        uint32_t knn_points,
+        bool deterministic = false,
+        const ProgressCallback &progress = ProgressCallback());
+
+    /* Create adjancency from a downsampled graph. */
+    AdjacencyMatrix(
+        const AdjacencyMatrix& adj,
+        const MatrixXf& V,
+        const MatrixXf& N,
+        const VectorXf& areas,
+        MatrixXf& V_p,
+        MatrixXf& V_n,
+        VectorXf& areas_p,
+        MatrixXu& to_upper,
+        VectorXu& to_lower,
+        bool deterministic = false,
+        const ProgressCallback& progress = ProgressCallback());
+
+    /* Move constructor. */
+    AdjacencyMatrix(AdjacencyMatrix&& other) : mLinks(std::move(other.mLinks)), mRows(std::move(other.mRows)) {}
+
+    /* Move assignment. */
+    AdjacencyMatrix& operator=(AdjacencyMatrix&& other)
+    {
+        mLinks = std::move(other.mLinks);
+        mRows = std::move(other.mRows);
+        return *this;
+    }
+
+    /* Disable copy constructor. */
+    AdjacencyMatrix(const AdjacencyMatrix& other) = delete;
+
+    /* Disable copy assignment. */
+    AdjacencyMatrix& operator=(const AdjacencyMatrix& other) = delete;
+
+    /* Element access. */
+    Link* operator[] (size_t index) const { return mRows[index]; }
+
+    const std::vector<Link>& Links() const { return mLinks; }
+    const std::vector<Link*>& Rows() const { return mRows; }
+
+private:
+    std::vector<Link> mLinks;
+    std::vector<Link*> mRows;
+};
 
 inline Link &search_adjacency(AdjacencyMatrix &adj, uint32_t i, uint32_t j) {
     for (Link* l = adj[i]; l != adj[i+1]; ++l)
@@ -68,10 +141,3 @@ inline Link &search_adjacency(AdjacencyMatrix &adj, uint32_t i, uint32_t j) {
     throw std::runtime_error("search_adjacency: failure!");
 }
 
-class BVH;
-struct MeshStats;
-
-extern AdjacencyMatrix generate_adjacency_matrix_pointcloud(
-    MatrixXf &V, MatrixXf &N, const BVH *bvh, MeshStats &stats,
-    uint32_t knn_points, bool deterministic = false,
-    const ProgressCallback &progress = ProgressCallback());
