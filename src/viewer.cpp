@@ -30,9 +30,9 @@
 #  include <sys/wait.h>
 #endif
 
-Viewer::Viewer(bool fullscreen, bool deterministic)
+Viewer::Viewer(bool fullscreen, bool deterministic, int concurrency)
     : Screen(Vector2i(1280, 960), "Instant Meshes", true, fullscreen),
-      mOptimizer(mRes, true), mBVH(nullptr) {
+      mOptimizer(mRes, true, concurrency) {
     resizeEvent(mSize);
     mCreaseAngle = -1;
     mDeterministic = deterministic;
@@ -646,8 +646,6 @@ Viewer::Viewer(bool fullscreen, bool deterministic)
 }
 
 Viewer::~Viewer() {
-    if (mBVH)
-        delete mBVH;
     mOptimizer.shutdown();
     mRes.free();
     mPointShader24.free();
@@ -1531,7 +1529,7 @@ void Viewer::traceFlowLines() {
         return;
     bool pointcloud = mRes.F().size() == 0;
     int version = mRes.iterationsQ();
-    if (mRes.levels() == 0 || !mBVH || version < 0 || pointcloud)
+    if (mRes.levels() == 0 || mBVH.empty() || version < 0 || pointcloud)
         return;
     int rosy = mOptimizer.rosy(), posy = mOptimizer.posy();
 
@@ -1606,8 +1604,8 @@ void Viewer::traceFlowLines() {
                         uint32_t idx1 = 0, idx2 = 0;
                         Float t1 = 0, t2 = 0;
                         Vector2f uv1, uv2;
-                        bool hit1 = mBVH->rayIntersect(ray1, idx1, t1, &uv1);
-                        bool hit2 = mBVH->rayIntersect(ray2, idx2, t2, &uv2);
+                        bool hit1 = mBVH.rayIntersect(ray1, idx1, t1, &uv1);
+                        bool hit2 = mBVH.rayIntersect(ray2, idx2, t2, &uv2);
                         if (!hit1 && !hit2) {
                             fail = true;
                             break;
@@ -2125,19 +2123,15 @@ void Viewer::loadState(std::string filename, bool compat) {
         mOrientationSingularityShader.load(state);
         state.popPrefix();
 
-        if (mBVH) {
-            delete mBVH;
-            mBVH = NULL;
-        }
+        mBVH.clear();
         mRes.free();
         state.pushPrefix("mres");
         mRes.load(state);
         state.popPrefix();
         if (mRes.levels() > 0 && mRes.size() > 0) {
-            mBVH = new BVH(&mRes.F(), &mRes.V(), &mRes.N(), mMeshStats.mAABB);
-            mBVH->build();
+            mBVH = BVH(&mRes.F(), &mRes.V(), &mRes.N(), mMeshStats.mAABB);
             mRes.printStatistics();
-            mBVH->printStatistics();
+            mBVH.printStatistics();
         }
 
         shareGLBuffers();
@@ -2576,7 +2570,7 @@ void Viewer::drawContents() {
             Eigen::Vector3f coord = project(Vector3f((model * pos).head<3>()), view, proj, mSize);
             if (coord.x() < -50 || coord.x() > mSize[0] + 50 || coord.y() < -50 || coord.y() > mSize[1] + 50)
                 continue;
-            if (!mBVH->rayIntersect(Ray(ray_origin, civ.head<3>() - ray_origin, 0.0f, 1.1f)))
+            if (!mBVH.rayIntersect(Ray(ray_origin, civ.head<3>() - ray_origin, 0.0f, 1.1f)))
                 nvgText(mNVGContext, coord.x(), mSize[1] - coord.y(), std::to_string(i).c_str(), nullptr);
         }
         nvgEndFrame(mNVGContext);
@@ -2598,7 +2592,7 @@ void Viewer::drawContents() {
             Eigen::Vector3f coord = project(Vector3f((model * pos).head<3>()), view, proj, mSize);
             if (coord.x() < -50 || coord.x() > mSize[0] + 50 || coord.y() < -50 || coord.y() > mSize[1] + 50)
                 continue;
-            if (!mBVH->rayIntersect(Ray(ray_origin, civ.head<3>() - ray_origin, 0.0f, 1.1f)))
+            if (!mBVH.rayIntersect(Ray(ray_origin, civ.head<3>() - ray_origin, 0.0f, 1.1f)))
                 nvgText(mNVGContext, coord.x(), mSize[1] - coord.y(), std::to_string(i).c_str(), nullptr);
         }
         nvgEndFrame(mNVGContext);
@@ -2868,7 +2862,7 @@ void Viewer::drawOverlay() {
         Eigen::Vector3f coord = project(Vector3f((model * pos).head<3>()), view, proj, mSize);
         coord.y() = mSize[1] - coord.y() - 16; coord.x() -= 16;
 
-        if (!mBVH->rayIntersect(Ray(pos.head<3>(), (civ-pos).head<3>(), 0.0f, 1.0f))) {
+        if (!mBVH.rayIntersect(Ray(pos.head<3>(), (civ-pos).head<3>(), 0.0f, 1.0f))) {
             NVGpaint imgPaint = nvgImagePattern(
                 ctx, coord.x(), coord.y(), 32, 32, 0, delIcon, 0.6f);
             nvgBeginPath(ctx);
@@ -2949,7 +2943,7 @@ bool Viewer::mouseButtonEvent(const Vector2i &p, int button, bool down, int modi
                         coord.y() = mSize[1] - coord.y();
                         if ((coord.head<2>() - p.cast<float>()).norm() > 16)
                             continue;
-                        if (!mBVH->rayIntersect(Ray(pos.head<3>(), (civ-pos).head<3>(), 0.0f, 1.0f))) {
+                        if (!mBVH.rayIntersect(Ray(pos.head<3>(), (civ-pos).head<3>(), 0.0f, 1.0f))) {
                             mStrokes.erase(it);
                             mDrag = false;
                             refreshStrokes();
@@ -2975,7 +2969,7 @@ bool Viewer::mouseButtonEvent(const Vector2i &p, int button, bool down, int modi
                     uint32_t f;
                     Float t;
 
-                    if (!mBVH->rayIntersect(ray, f, t, &uv)) {
+                    if (!mBVH.rayIntersect(ray, f, t, &uv)) {
                         mScreenCurve.clear();
                         return false;
                     }
@@ -3060,7 +3054,7 @@ void Viewer::loadInput(std::string filename, Float creaseAngle, Float scale,
     MatrixXu F, F_gpu;
     MatrixXf V, N, V_gpu, N_gpu;
     VectorXf A;
-    AdjacencyMatrix adj = nullptr;
+    AdjacencyMatrix adj;
 
     mOperationStart = mLastProgressMessage = glfwGetTime();
     mProcessEvents = false;
@@ -3082,17 +3076,13 @@ void Viewer::loadInput(std::string filename, Float creaseAngle, Float scale,
         mOptimizer.stop();
     }
 
-    if (mBVH) {
-        delete mBVH;
-        mBVH = nullptr;
-    }
+    mBVH.clear();
 
     mMeshStats = compute_mesh_stats(F, V, mDeterministic, mProgress);
 
     if (pointcloud) {
-        mBVH = new BVH(&F, &V, &N, mMeshStats.mAABB);
-        mBVH->build(mProgress);
-        adj = generate_adjacency_matrix_pointcloud(V, N, mBVH, mMeshStats, knn_points, mDeterministic, mProgress);
+        mBVH = BVH(&F, &V, &N, mMeshStats.mAABB);
+        adj = AdjacencyMatrix(V, N, mBVH, mMeshStats, knn_points, mDeterministic, mProgress);
         A.resize(V.cols());
         A.setConstant(1.0f);
     }
@@ -3155,9 +3145,7 @@ void Viewer::loadInput(std::string filename, Float creaseAngle, Float scale,
         /* Compute an adjacency matrix */
         //AdjacencyMatrix adj = generate_adjacency_matrix_cotan(
             //mRes.F(), mRes.V(), V2E, E2E, mNonmanifoldVertices, mProgress);
-        adj = generate_adjacency_matrix_uniform(
-            mRes.F(), V2E, E2E, mNonmanifoldVertices, mProgress);
-        mRes.setAdj(std::move(adj));
+        adj = AdjacencyMatrix(mRes.F(), V2E, E2E, mNonmanifoldVertices, mProgress);
 
         /* Generate crease normals. This changes F and V */
         mCreaseMap.clear();
@@ -3188,15 +3176,14 @@ void Viewer::loadInput(std::string filename, Float creaseAngle, Float scale,
     mRes.resetSolution();
 
     mStrokes.clear();
-    if (!mBVH) {
-        mBVH = new BVH(&mRes.F(), &mRes.V(), &mRes.N(), mMeshStats.mAABB);
-        mBVH->build(mProgress);
+    if (mBVH.empty()) {
+        mBVH = BVH(&mRes.F(), &mRes.V(), &mRes.N(), mMeshStats.mAABB, mProgress);
     } else {
-        mBVH->setData(&mRes.F(), &mRes.V(), &mRes.N());
+        mBVH.setData(&mRes.F(), &mRes.V(), &mRes.N());
     }
 
     mRes.printStatistics();
-    mBVH->printStatistics();
+    mBVH.printStatistics();
 
     showProgress("Uploading to GPU", 0.0f);
 
