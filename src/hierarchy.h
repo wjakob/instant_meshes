@@ -18,17 +18,16 @@
 
 class Serializer;
 
-extern AdjacencyMatrix
-downsample_graph(const AdjacencyMatrix adj, const MatrixXf &V,
-                 const MatrixXf &N, const VectorXf &areas, MatrixXf &V_p,
-                 MatrixXf &V_n, VectorXf &areas_p, MatrixXu &to_upper,
-                 VectorXu &to_lower, bool deterministic = false,
-                 const ProgressCallback &progress = ProgressCallback());
-
 struct MultiResolutionHierarchy {
     enum { MAX_DEPTH = 25 };
 public:
     MultiResolutionHierarchy();
+    MultiResolutionHierarchy(const MultiResolutionHierarchy& other) = delete;
+    MultiResolutionHierarchy(MultiResolutionHierarchy&& other) = delete;
+    MultiResolutionHierarchy& operator=(const MultiResolutionHierarchy& other) = delete;
+    MultiResolutionHierarchy& operator=(MultiResolutionHierarchy&& other) = delete;
+    ~MultiResolutionHierarchy(){}
+
     void free();
     void save(Serializer &state);
     void load(const Serializer &state);
