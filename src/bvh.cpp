@@ -12,6 +12,11 @@
 */
 
 #include "bvh.h"
+#include "common.h"
+
+#if defined(SINGLE_PRECISION)
+    static_assert(sizeof(BVHNode) == 32, "BVH Node is not packed! Investigate compiler settings.");
+#endif
 
 struct Bins {
     static const int BIN_COUNT = 8;
@@ -25,9 +30,10 @@ struct BVHBuildTask : public tbb::task {
     BVH &bvh;
     uint32_t node_idx;
     uint32_t *start, *end, *temp;
+    const ProgressCallback& progress;
 
-    BVHBuildTask(BVH &bvh, uint32_t node_idx, uint32_t *start, uint32_t *end, uint32_t *temp)
-        : bvh(bvh), node_idx(node_idx), start(start), end(end), temp(temp) { }
+    BVHBuildTask(BVH &bvh, uint32_t node_idx, uint32_t *start, uint32_t *end, uint32_t *temp, const ProgressCallback& progress)
+        : bvh(bvh), node_idx(node_idx), start(start), end(end), temp(temp), progress(progress) { }
 
     task *execute() {
         const MatrixXu &F = *bvh.mF;
@@ -37,8 +43,7 @@ struct BVHBuildTask : public tbb::task {
         BVHNode &node = bvh.mNodes[node_idx];
 
         if (size < SERIAL_THRESHOLD) {
-            tbb::blocked_range<uint32_t> range(start-bvh.mIndices, end-bvh.mIndices);
-            const ProgressCallback &progress = bvh.mProgress;
+            tbb::blocked_range<uint32_t> range(start-bvh.mIndices.data(), end-bvh.mIndices.data());
             SHOW_PROGRESS_RANGE(range, total_size, "Constructing Bounding Volume Hierarchy");
             execute_serially(bvh, node_idx, start, end, temp);
             return nullptr;
@@ -165,8 +170,7 @@ struct BVHBuildTask : public tbb::task {
 
         /* Post right subtree to scheduler */
         BVHBuildTask &b = *new (c.allocate_child())
-            BVHBuildTask(bvh, node_idx_right, start + left_count,
-                         end, temp + left_count);
+            BVHBuildTask(bvh, node_idx_right, start + left_count, end, temp + left_count, progress);
         spawn(b);
 
         /* Directly start working on left subtree */
@@ -247,7 +251,7 @@ struct BVHBuildTask : public tbb::task {
         if (best_index == -1) {
             /* Splitting does not reduce the cost, make a leaf */
             node.leaf.flag = 1;
-            node.leaf.start = start - bvh.mIndices;
+            node.leaf.start = start - bvh.mIndices.data();
             node.leaf.size  = size;
             return;
         }
@@ -276,30 +280,74 @@ struct BVHBuildTask : public tbb::task {
     }
 };
 
-BVH::BVH(const MatrixXu *F, const MatrixXf *V, const MatrixXf *N, const AABB &aabb)
-: mIndices(nullptr), mF(F), mV(V), mN(N), mDiskRadius(0.f) {
+BVH::BVH()
+: mF(nullptr), mV(nullptr), mN(nullptr), mDiskRadius(0.f) {}
+
+BVH::BVH(const MatrixXu *F, const MatrixXf *V, const MatrixXf *N, const AABB &aabb, const ProgressCallback &progress)
+: mF(F), mV(V), mN(N), mDiskRadius(0.f) {
+    if (!mF || !mV || !mN)
+        throw std::runtime_error("Cannot create BVH with null pointers.");
+
+    if (mN->size() != mV->size())
+        throw std::runtime_error("Cannot create BVH.  The number of vertices and normals do not match.");
+
     if (mF->size() > 0) {
         mNodes.resize(2*mF->cols());
         memset(mNodes.data(), 0, sizeof(BVHNode) * mNodes.size());
         mNodes[0].aabb = aabb;
-        mIndices = new uint32_t[mF->cols()];
+        mIndices.resize(mF->cols());
     } else if (mV->size() > 0) {
         mNodes.resize(2*mV->cols());
         memset(mNodes.data(), 0, sizeof(BVHNode) * mNodes.size());
         mNodes[0].aabb = aabb;
-        mIndices = new uint32_t[mV->cols()];
+        mIndices.resize(mV->cols());
     }
+
+    build(progress);
+}
+
+BVH::BVH(BVH&& other)
+:   mF(other.mF),
+    mV(other.mV),
+    mN(other.mN),
+    mDiskRadius(other.mDiskRadius), 
+    mNodes(std::move(other.mNodes)),
+    mIndices(std::move(other.mIndices))
+{
+    other.mF = nullptr;
+    other.mV = nullptr;
+    other.mN = nullptr;
+    other.mDiskRadius = 0;
+}
+
+BVH& BVH::operator=(BVH&& other)
+{
+    mF = other.mF;
+    mV = other.mV;
+    mN = other.mN;
+    mDiskRadius = other.mDiskRadius;
+    mNodes = std::move(other.mNodes);
+    mIndices = std::move(other.mIndices);
+    other.mF = nullptr;
+    other.mV = nullptr;
+    other.mN = nullptr;
+    other.mDiskRadius = 0;
+    return *this;
+}
+
+void BVH::clear()
+{
+    mF = nullptr;
+    mV = nullptr;
+    mN = nullptr;
+    mDiskRadius = 0;
+    mNodes.clear();
+    mIndices.clear();
 }
 
 void BVH::build(const ProgressCallback &progress) {
     if (mF->cols() == 0 && mV->cols() == 0)
         return;
-    mProgress = progress;
-
-#if defined(SINGLE_PRECISION)
-    if (sizeof(BVHNode) != 32)
-        throw std::runtime_error("BVH Node is not packed! Investigate compiler settings.");
-#endif
 
     cout << "Constructing Bounding Volume Hierarchy .. ";
     cout.flush();
@@ -311,11 +359,10 @@ void BVH::build(const ProgressCallback &progress) {
         mIndices[i] = i;
 
     Timer<> timer;
-    uint32_t *temp = new uint32_t[total_size];
+    std::vector<uint32_t> temp(total_size);
     BVHBuildTask& task = *new(tbb::task::allocate_root())
-        BVHBuildTask(*this, 0u, mIndices, mIndices + total_size, temp);
+        BVHBuildTask(*this, 0u, mIndices.data(), mIndices.data() + total_size, temp.data(), progress);
     tbb::task::spawn_root_and_wait(task);
-    delete[] temp;
 
     std::pair<Float, uint32_t> stats = statistics();
     cout << "done. ("
@@ -376,8 +423,6 @@ void BVH::build(const ProgressCallback &progress) {
         refitBoundingBoxes();
         cout << "done. (took " << timeString(timer.value()) << ")" << endl;
     }
-
-    mProgress = nullptr;
 }
 
 bool BVH::rayIntersect(Ray ray, uint32_t &idx, Float &t, Vector2f *uv) const {
@@ -529,6 +574,9 @@ void BVH::findNearestWithRadius(const Vector3f &p, Float radius,
                                 bool includeSelf) const {
     result.clear();
 
+    if (mNodes.empty())
+        throw std::runtime_error("Cannot find nearest neighbor. The BVH is not initialized.");
+
     uint32_t node_idx = 0, stack[64];
     uint32_t stack_idx = 0;
     Float radius2 = radius*radius;
@@ -571,6 +619,12 @@ void BVH::findNearestWithRadius(const Vector3f &p, Float radius,
 }
 
 uint32_t BVH::findNearest(const Vector3f &p, Float &radius, bool includeSelf) const {
+
+    if (mNodes.empty())
+    {
+        throw std::runtime_error("Cannot find nearest neighbor. The BVH is not initialized.");
+    }
+
     uint32_t node_idx = 0, stack[64];
     uint32_t stack_idx = 0;
     Float radius2 = radius*radius;
@@ -632,6 +686,9 @@ void BVH::findKNearest(const Vector3f &p, uint32_t k, Float &radius,
                        std::vector<std::pair<Float, uint32_t>> &result,
                        bool includeSelf) const {
     result.clear();
+
+    if (mNodes.empty())
+        throw std::runtime_error("Cannot find nearest neighbor. The BVH is not initialized.");
 
     uint32_t node_idx = 0, stack[64];
     uint32_t stack_idx = 0;
@@ -712,6 +769,9 @@ void BVH::findKNearest(const Vector3f &p, const Vector3f &n, uint32_t k,
                        std::vector<std::pair<Float, uint32_t> > &result,
                        Float angleThresh, bool includeSelf) const {
     result.clear();
+
+    if (mNodes.empty())
+        throw std::runtime_error("Cannot find nearest neighbor. The BVH is not initialized.");
 
     uint32_t node_idx = 0, stack[64];
     uint32_t stack_idx = 0;
@@ -867,10 +927,6 @@ std::pair<Float, uint32_t> BVH::statistics(uint32_t node_idx) const {
             stats_left.second + stats_right.second + 1u
         );
     }
-}
-
-BVH::~BVH() {
-    delete[] mIndices;
 }
 
 void BVH::refitBoundingBoxes(uint32_t node_idx) {
