@@ -10,23 +10,19 @@ git clone --depth 1 git@github.com:Matter-and-Form/instant-meshes.git
 
 ```
 
-1. Update submodules.
+2. Update submodules.
 ```
 cd instant-meshes
 git submodule update --init --recursive
 ```
 
-3. Run the build script to build instant-meshes.
+3. Native build: Run the native build script.
 ```
-scripts/build-instant-meshes
+scripts/build
 ```
 
-4. Cross compile aarch64 in Raspbian-11 docker container. Run Raspbian-11 docker container with a shared volume to instant-meshes.
+4. Cross compile aarch64 build: Run the cross-compile aarch64 build script.
 ```
-docker run -v .:/instant-meshes -it ghcr.io/matter-and-form/debian-bullseye-cc-raspbian-11-aarch64
+scripts/build-aarch64
 ```
-In the docker container, go to the instant-meshes directory and run the build script for aarch64 cross-compile.
-```
-cd instant-meshes/
-scripts/build aarch64
-```
+

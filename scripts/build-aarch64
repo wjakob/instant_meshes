@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# The absolute script path.
+SCRIPT_PATH="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
+
+# The path to the instant-meshes repo.
+REPO_PATH=$(realpath ${SCRIPT_PATH}/..)
+
+# The debian bullseye cross-compile container.
+DOCKER_IMAGE=ghcr.io/matter-and-form/debian-bullseye-cc-raspbian-11-aarch64
+
+# Pull the docker image.
+docker pull ${DOCKER_IMAGE}
+
+DOCKER_PATH=/instant-meshes
+
+# We will run the 'build aarch64' script inside the docker container.
+DOCKER_COMMAND="${DOCKER_PATH}/scripts/build aarch64"
+
+# Run the build script in the debian bullseye cross-compile container.
+docker run -v ${REPO_PATH}:${DOCKER_PATH} ${DOCKER_IMAGE} /bin/bash -c "${DOCKER_COMMAND}"
+
+# Exit with docker run exit value.
+exit $?
