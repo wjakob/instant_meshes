@@ -1455,11 +1455,12 @@ bool move_position_singularity(MultiResolutionHierarchy &mRes, uint32_t f_src, u
     return true;
 }
 
-Optimizer::Optimizer(MultiResolutionHierarchy &mRes, bool interactive)
+Optimizer::Optimizer(MultiResolutionHierarchy &mRes, bool interactive, int concurrency)
     : mRes(mRes), mRunning(true), mOptimizeOrientations(false),
       mOptimizePositions(false), mLevel(-1), mLevelIterations(0),
       mHierarchical(false), mRoSy(-1), mPoSy(-1), mExtrinsic(true),
-      mInteractive(interactive), mLastUpdate(0.0f), mProgress(1.f) {
+      mInteractive(interactive), mLastUpdate(0.0f), mProgress(1.f),
+      mConcurrency(concurrency) {
     mThread = std::thread(&Optimizer::run, this);
 }
 
@@ -1534,12 +1535,11 @@ void Optimizer::wait() {
     while (mRunning && (mOptimizePositions || mOptimizeOrientations))
         mCond.wait(mRes.mutex());
 }
-extern int nprocs;
 
 void Optimizer::run() {
     const int levelIterations = 6;
     uint32_t operations = 0;
-    tbb::task_scheduler_init init(nprocs);
+    tbb::task_scheduler_init init(mConcurrency);
 
     auto progress = [&](uint32_t ops) {
         operations += ops;

@@ -57,9 +57,28 @@ class BVH {
     /* Cost values for BVH surface area heuristic */
     enum { T_aabb = 1, T_tri = 1 };
 public:
-    BVH(const MatrixXu *F, const MatrixXf *V, const MatrixXf *N, const AABB &aabb);
+    /* Default empty constructor. */
+    BVH(); 
 
-    ~BVH();
+    /* Construct BVH from a mesh. */
+    BVH(const MatrixXu *F, const MatrixXf *V, const MatrixXf *N, const AABB &aabb, const ProgressCallback &progress = ProgressCallback());
+
+    /* Move constructor. */
+    BVH(BVH&& other);
+
+    /* Move assignment. */
+    BVH& operator=(BVH&& other);
+
+    /* Disable copy constructor. */
+    BVH(const BVH& other) = delete;
+
+    /* Disable copy assignment. */
+    BVH& operator=(const BVH& other) = delete;
+
+    /* Destructor. */
+    ~BVH(){}
+
+    void clear();
 
     void setData(const MatrixXu *F, const MatrixXf *V, const MatrixXf *N) { mF = F; mV = V; mN = N; }
 
@@ -67,8 +86,6 @@ public:
     const MatrixXf *V() const { return mV; }
     const MatrixXf *N() const { return mN; }
     Float diskRadius() const { return mDiskRadius; }
-
-    void build(const ProgressCallback &progress = ProgressCallback());
 
     void printStatistics() const;
 
@@ -92,17 +109,24 @@ public:
                       Float angleThresh = 30,
                       bool includeSelf = false) const;
 
+    bool empty() const { return mNodes.empty(); }
+
+    bool hasVertices() const { return mV && (mV->size() > 0); }
+    bool hasNormals() const { return hasVertices() && mN && (mN->size() == mV->size()); }
+    bool hasFaces() const { return mF && (mF->size() > 0); }
+
 protected:
+    void build(const ProgressCallback& progress);
     bool rayIntersectTri(const Ray &ray, uint32_t i, Float &t, Vector2f &uv) const;
     bool rayIntersectDisk(const Ray &ray, uint32_t i, Float &t) const;
     void refitBoundingBoxes(uint32_t node_idx = 0);
     std::pair<Float, uint32_t> statistics(uint32_t node_idx = 0) const;
 
 protected:
-    std::vector<BVHNode> mNodes;
-    uint32_t *mIndices;
     const MatrixXu *mF;
     const MatrixXf *mV, *mN;
-    ProgressCallback mProgress;
     Float mDiskRadius;
+    std::vector<BVHNode> mNodes;
+    std::vector<uint32_t> mIndices;
+    ProgressCallback mProgress;
 };

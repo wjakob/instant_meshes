@@ -25,7 +25,7 @@ struct CurvePoint {
 
 class BVH;
 
-extern bool smooth_curve(const BVH *bvh, const VectorXu &E2E,
+extern bool smooth_curve(const BVH &bvh, const VectorXu &E2E,
                          std::vector<CurvePoint> &curve, bool watertight = false);
 
 extern bool astar(const MatrixXu &F, const VectorXu &E2E, const MatrixXf &V,

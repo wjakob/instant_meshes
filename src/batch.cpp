@@ -26,7 +26,7 @@ void batch_process(const std::string &input, const std::string &output,
                    int rosy, int posy, Float scale, int face_count,
                    int vertex_count, Float creaseAngle, bool extrinsic,
                    bool align_to_boundaries, int smooth_iter, int knn_points,
-                   bool pure_quad, bool deterministic) {
+                   bool pure_quad, bool deterministic, int concurrency) {
     cout << endl;
     cout << "Running in batch mode:" << endl;
     cout << "   Input file             = " << input << endl;
@@ -50,8 +50,8 @@ void batch_process(const std::string &input, const std::string &output,
     MatrixXf V, N;
     VectorXf A;
     std::set<uint32_t> crease_in, crease_out;
-    BVH *bvh = nullptr;
-    AdjacencyMatrix adj = nullptr;
+    BVH bvh;
+    AdjacencyMatrix adj;
 
     /* Load the input mesh */
     load_mesh_or_pointcloud(input, F, V, N);
@@ -62,9 +62,8 @@ void batch_process(const std::string &input, const std::string &output,
     MeshStats stats = compute_mesh_stats(F, V, deterministic);
 
     if (pointcloud) {
-        bvh = new BVH(&F, &V, &N, stats.mAABB);
-        bvh->build();
-        adj = generate_adjacency_matrix_pointcloud(V, N, bvh, stats, knn_points, deterministic);
+        bvh = BVH(&F, &V, &N, stats.mAABB);
+        adj = AdjacencyMatrix(V, N, bvh, stats, knn_points, deterministic);
         A.resize(V.cols());
         A.setConstant(1.0f);
     }
@@ -112,7 +111,7 @@ void batch_process(const std::string &input, const std::string &output,
         build_dedge(F, V, V2E, E2E, boundary, nonManifold);
 
         /* Compute adjacency matrix */
-        adj = generate_adjacency_matrix_uniform(F, V2E, E2E, nonManifold);
+        adj = AdjacencyMatrix(F, V2E, E2E, nonManifold);
 
         /* Compute vertex/crease normals */
         if (creaseAngle >= 0)
@@ -157,11 +156,10 @@ void batch_process(const std::string &input, const std::string &output,
         mRes.propagateConstraints(rosy, posy);
     }
 
-    if (bvh) {
-        bvh->setData(&mRes.F(), &mRes.V(), &mRes.N());
+    if (!bvh.empty()) {
+        bvh.setData(&mRes.F(), &mRes.V(), &mRes.N());
     } else if (smooth_iter > 0) {
-        bvh = new BVH(&mRes.F(), &mRes.V(), &mRes.N(), stats.mAABB);
-        bvh->build();
+        bvh = BVH(&mRes.F(), &mRes.V(), &mRes.N(), stats.mAABB);
     }
 
     cout << "Preprocessing is done. (total time excluding file I/O: "
@@ -209,6 +207,4 @@ void batch_process(const std::string &input, const std::string &output,
     cout << "Extraction is done. (total time: " << timeString(timer.reset()) << ")" << endl;
 
     write_mesh(output, F_extr, O_extr, MatrixXf(), Nf_extr);
-    if (bvh)
-        delete bvh;
 }

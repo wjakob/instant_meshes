@@ -56,7 +56,7 @@ struct CurvePoint;
 
 class Viewer : public Screen {
 public:
-    Viewer(bool fullscreen, bool deterministic);
+    Viewer(bool fullscreen, bool deterministic, int concurrency = -1);
     virtual ~Viewer();
 
     bool mouseMotionEvent(const Vector2i &p, const Vector2i &rel,
@@ -146,7 +146,7 @@ protected:
     VectorXb mBoundaryVertices;
     MultiResolutionHierarchy mRes;
     Optimizer mOptimizer;
-    BVH *mBVH;
+    BVH mBVH;
     MeshStats mMeshStats;
     int mSelectedLevel;
     Float mCreaseAngle;
