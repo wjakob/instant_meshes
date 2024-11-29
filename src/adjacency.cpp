@@ -26,7 +26,8 @@
 namespace InstantMeshes
 {
 
-// Load
+static_assert(sizeof(Link) == 12, "Adjacency matrix entries are not packed! Investigate compiler settings.");
+
 AdjacencyMatrix::AdjacencyMatrix(
     const std::vector<std::vector<uint32_t>>& adj_id,
     const std::vector<std::vector<uint32_t>>& adj_ivar,
@@ -63,7 +64,6 @@ AdjacencyMatrix::AdjacencyMatrix(
     }
 }
 
-// Uniform
 AdjacencyMatrix::AdjacencyMatrix(
     const MatrixXu& F,
     const VectorXu& V2E,
@@ -142,7 +142,6 @@ AdjacencyMatrix::AdjacencyMatrix(
     if (logger) *logger << "done. (took " << timeString(timer.value()) << ")" << std::endl;
 }
 
-// Cotangent Laplacian
 AdjacencyMatrix::AdjacencyMatrix(
     const MatrixXu& F,
     const MatrixXf& V,
@@ -266,7 +265,6 @@ AdjacencyMatrix::AdjacencyMatrix(
     if (logger) *logger << "done. (took " << timeString(timer.value()) << ")" << std::endl;
 }
 
-// Point cloud
 AdjacencyMatrix::AdjacencyMatrix(
     MatrixXf &V,
     MatrixXf &N,
@@ -287,7 +285,6 @@ AdjacencyMatrix::AdjacencyMatrix(
 
     DisjointSets dset(V.cols());
     std::vector<uint32_t> adjacencySizes(V.cols());
-    //VectorXu adj_size(V.cols());
     tbb::parallel_for(
         tbb::blocked_range<uint32_t>(0u, (uint32_t) V.cols(), GRAIN_SIZE),
         [&](const tbb::blocked_range<uint32_t> &range) {

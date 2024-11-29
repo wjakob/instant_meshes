@@ -29,7 +29,7 @@ void batch_process(const std::string &input, const std::string &output,
                    int rosy, int posy, Float scale, int face_count,
                    int vertex_count, Float creaseAngle, bool extrinsic,
                    bool align_to_boundaries, int smooth_iter, int knn_points,
-                   bool pure_quad, bool deterministic) {
+                   bool pure_quad, bool deterministic, int concurrency) {
     if (logger)
     {
         auto& out = *logger;
@@ -123,7 +123,6 @@ void batch_process(const std::string &input, const std::string &output,
 
         /* Compute adjacency matrix */
         adj = AdjacencyMatrix(F, V2E, E2E, nonManifold);
-        //adj = generate_adjacency_matrix_uniform(F, V2E, E2E, nonManifold);
 
         /* Compute vertex/crease normals */
         if (creaseAngle >= 0)
@@ -168,17 +167,16 @@ void batch_process(const std::string &input, const std::string &output,
         mRes.propagateConstraints(rosy, posy);
     }
 
-    if (bvh.valid()) {
+    if (!bvh.empty()) {
         bvh.setData(&mRes.F(), &mRes.V(), &mRes.N());
     } else if (smooth_iter > 0) {
         bvh = BVH(&mRes.F(), &mRes.V(), &mRes.N(), stats.mAABB);
-        //bvh->build();
     }
 
     if (logger) *logger << "Preprocessing is done. (total time excluding file I/O: "
          << timeString(timer.reset()) << ")" << std::endl;
 
-    Optimizer optimizer(mRes, false);
+    Optimizer optimizer(mRes, false, concurrency);
     optimizer.setRoSy(rosy);
     optimizer.setPoSy(posy);
     optimizer.setExtrinsic(extrinsic);

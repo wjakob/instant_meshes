@@ -22,9 +22,9 @@
 namespace InstantMeshes
 {
 
-bool smooth_curve(const BVH *bvh, const VectorXu &E2E, std::vector<CurvePoint> &curve, bool watertight) {
-    const MatrixXu &F = *bvh->F();
-    const MatrixXf &V = *bvh->V(), &N = *bvh->N();
+bool smooth_curve(const BVH &bvh, const VectorXu &E2E, std::vector<CurvePoint> &curve, bool watertight) {
+    const MatrixXu &F = *bvh.F();
+    const MatrixXf &V = *bvh.V(), &N = *bvh.N();
     if (logger) *logger << std::endl;
 
     std::vector<CurvePoint> curve_new;
@@ -50,8 +50,8 @@ bool smooth_curve(const BVH *bvh, const VectorXu &E2E, std::vector<CurvePoint> &
                 uint32_t idx1 = 0, idx2 = 0;
                 Float t1 = 0, t2 = 0;
                 Vector2f uv1, uv2;
-                bool hit1 = bvh->rayIntersect(ray1, idx1, t1, &uv1);
-                bool hit2 = bvh->rayIntersect(ray2, idx2, t2, &uv2);
+                bool hit1 = bvh.rayIntersect(ray1, idx1, t1, &uv1);
+                bool hit2 = bvh.rayIntersect(ray2, idx2, t2, &uv2);
 
                 if (!hit1 && !hit2)
                     continue;

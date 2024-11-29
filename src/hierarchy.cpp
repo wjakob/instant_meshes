@@ -203,8 +203,6 @@ void generate_graph_coloring(const AdjacencyMatrix &adj, uint32_t size,
 }
 
 MultiResolutionHierarchy::MultiResolutionHierarchy() {
-    if (sizeof(Link) != 12)
-        throw std::runtime_error("Adjacency matrix entries are not packed! Investigate compiler settings.");
     mA.reserve(MAX_DEPTH+1);
     mV.reserve(MAX_DEPTH+1);
     mN.reserve(MAX_DEPTH+1);
@@ -325,10 +323,6 @@ void MultiResolutionHierarchy::resetSolution() {
 }
 
 void MultiResolutionHierarchy::free() {
-    // for (size_t i=0; i<mAdj.size(); ++i) {
-    //     delete[] mAdj[i][0];
-    //     delete[] mAdj[i];
-    // }
     mAdj.clear(); mV.clear(); mQ.clear();
     mO.clear(); mN.clear(); mA.clear();
     mCQ.clear(); mCO.clear();
@@ -337,7 +331,10 @@ void MultiResolutionHierarchy::free() {
     mPhases.clear();
     mF.resize(0, 0);
     mE2E.resize(0);
+    mIterationsQ = mIterationsO = -1;
+    mScale = 0;
     mTotalSize = 0;
+    mFrozenO = mFrozenQ = false;
 }
 
 void MultiResolutionHierarchy::save(Serializer &serializer) {

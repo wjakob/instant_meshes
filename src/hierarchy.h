@@ -25,11 +25,11 @@ struct MultiResolutionHierarchy {
     enum { MAX_DEPTH = 25 };
 public:
     MultiResolutionHierarchy();
-    ~MultiResolutionHierarchy() { free(); }
     MultiResolutionHierarchy(const MultiResolutionHierarchy& other) = delete;
     MultiResolutionHierarchy(MultiResolutionHierarchy&& other) = delete;
     MultiResolutionHierarchy& operator=(const MultiResolutionHierarchy& other) = delete;
     MultiResolutionHierarchy& operator=(MultiResolutionHierarchy&& other) = delete;
+    ~MultiResolutionHierarchy(){}
 
     void free();
     void save(Serializer &state);

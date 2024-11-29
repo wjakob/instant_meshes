@@ -908,7 +908,7 @@ void extract_faces(std::vector<std::vector<TaggedLink> > &adj, MatrixXf &O,
             }
         );
 
-        const bool hasBVH = bvh.valid() && (bvh.F()->size() > 0);
+        const bool bvhHasFaces = bvh.hasFaces();
 
         for (int it=0; it<smooth_iterations; ++it) {
             MatrixXf O_prime(O.rows(), O.cols());
@@ -935,7 +935,7 @@ void extract_faces(std::vector<std::vector<TaggedLink> > &adj, MatrixXf &O,
                             Vector3f n = cov.jacobiSvd(Eigen::ComputeFullU).matrixU().col(2).normalized();
                             n *= signum(avgNormal.dot(n));
 
-                            if (hasBVH) {
+                            if (bvhHasFaces) {
                                 Ray ray1(centroid,  n, 0, scale / 2);
                                 Ray ray2(centroid, -n, 0, scale / 2);
                                 uint32_t idx1 = 0, idx2 = 0;

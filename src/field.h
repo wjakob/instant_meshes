@@ -167,7 +167,6 @@ public:
     Optimizer(const Optimizer& other) = delete;
     Optimizer& operator=(const Optimizer& other) = delete;
 
-
     void save(Serializer &state);
     void load(const Serializer &state);
 
